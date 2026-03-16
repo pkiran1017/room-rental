@@ -15,9 +15,36 @@ interface RegisterResponse {
     requiresVerification: boolean;
 }
 
+const normalizeUser = (rawUser: unknown): User => {
+    const source = (rawUser || {}) as Record<string, unknown>;
+
+    return {
+        id: Number(source.id ?? source.userId ?? 0),
+        unique_id: String(source.unique_id ?? source.uniqueId ?? ''),
+        name: String(source.name ?? ''),
+        email: String(source.email ?? ''),
+        contact: String(source.contact ?? ''),
+        gender: (source.gender as User['gender']) || 'Other',
+        pincode: String(source.pincode ?? ''),
+        role: (source.role as User['role']) || 'Member',
+        broker_area: source.broker_area ? String(source.broker_area) : undefined,
+        broker_status: (source.broker_status ?? source.brokerStatus) as User['broker_status'],
+        profile_image: source.profile_image ? String(source.profile_image) : undefined,
+        two_factor_enabled: Boolean(source.two_factor_enabled),
+        is_verified: Boolean(source.is_verified ?? true),
+        registration_date: String(source.registration_date ?? ''),
+        last_login: source.last_login ? String(source.last_login) : undefined,
+        status: (source.status as User['status']) || 'Active',
+        contact_visibility: (source.contact_visibility as User['contact_visibility']) || 'Private'
+    };
+};
+
 export const login = async (data: LoginFormData): Promise<LoginResponse> => {
     const response = await post<ApiResponse<LoginResponse>>('/auth/login', data);
-    return response.data;
+    return {
+        ...response.data,
+        user: normalizeUser(response.data.user)
+    };
 };
 
 export const register = async (data: RegisterFormData): Promise<RegisterResponse> => {
@@ -46,7 +73,7 @@ export const resendOTP = async (email: string): Promise<void> => {
 
 export const getCurrentUser = async (): Promise<User> => {
     const response = await get<ApiResponse<User>>('/auth/me');
-    return response.data;
+    return normalizeUser(response.data);
 };
 
 export const forgotPassword = async (email: string): Promise<void> => {

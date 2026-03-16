@@ -148,7 +148,7 @@ const generateQuickPassword = (): string => {
 
 const PostRoomPage: React.FC = () => {
     const navigate = useNavigate();
-    const { user, register, verifyOTP, resendOTP, login } = useAuth();
+    const { user, isAuthenticated, isLoading, register, verifyOTP, resendOTP, login } = useAuth();
     const imageInputRef = useRef<HTMLInputElement | null>(null);
     const [currentStep, setCurrentStep] = useState(() => {
         const savedStep = localStorage.getItem('postRoomCurrentStep');
@@ -834,10 +834,15 @@ const PostRoomPage: React.FC = () => {
             return;
         }
 
-        const effectiveIsAuthenticated = Boolean(options?.authOverride?.forceAuthenticated || user?.id);
+        const effectiveIsAuthenticated = Boolean(options?.authOverride?.forceAuthenticated || isAuthenticated || user?.id);
         const effectiveEmail = options?.authOverride?.email || user?.email;
         const effectiveContact = options?.authOverride?.contact || formData.contact || user?.contact || '';
         const effectiveRole = options?.authOverride?.role || user?.role;
+
+        if (!options?.skipQuickAuthCheck && isLoading) {
+            toast.error('Checking login status. Please try again in a moment.');
+            return;
+        }
 
         if (!options?.skipQuickAuthCheck && !effectiveIsAuthenticated) {
             openQuickRegisterDialog();
@@ -1590,12 +1595,12 @@ const PostRoomPage: React.FC = () => {
         return 'Ready to submit';
     };
 
-    const isGuestView = !user?.id;
+    const isGuestView = !isAuthenticated;
 
     return (
         <div className={`${isGuestView ? 'max-w-5xl' : 'max-w-3xl'} mx-auto`}> 
             <div className="flex items-center gap-4 mb-6">
-                <Button variant="ghost" onClick={() => navigate(user?.id ? '/dashboard/rooms' : '/')}>
+                <Button variant="ghost" onClick={() => navigate(isAuthenticated ? '/dashboard/rooms' : '/')}>
                     <ChevronLeft className="w-4 h-4 mr-2" />
                     Back
                 </Button>

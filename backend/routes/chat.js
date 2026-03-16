@@ -309,17 +309,31 @@ router.post('/room/:roomId/message',
             [recipientId, `New message from ${req.user.name}`, req.params.roomId]
         );
 
+        // Fetch sender's profile picture for professional WhatsApp-like notification
+        const senderProfile = await executeQuery(
+            'SELECT profile_image FROM users WHERE id = ?',
+            [req.user.userId]
+        );
+        const senderAvatar = senderProfile[0]?.profile_image || '/favicon.png';
+
         // Send web push notification (works when app tab is closed) when recipient has subscribed.
+        // Professional WhatsApp-style notification with sender's avatar
         await sendWebPushToUser(recipientId, {
-            title: `Message from ${req.user.name}`,
-            body: String(message || '').slice(0, 140) || 'Sent you a message',
-            icon: '/favicon.png',
+            title: `${req.user.name}`, // Just sender name as title (WhatsApp style)
+            body: String(message || '').slice(0, 150) || 'Sent you a message',
+            // Use sender's profile picture as notification icon (WhatsApp-style)
+            icon: senderAvatar,
             badge: '/favicon.png',
             tag: `chat_${req.params.roomId}`,
+            // Pass sender details for professional styling
+            senderName: req.user.name,
+            senderAvatar: senderAvatar,
             data: {
                 url: `/dashboard/chat?room=${encodeURIComponent(req.params.roomId)}`,
                 chatRoomId: req.params.roomId,
                 type: 'chat_message',
+                senderId: req.user.userId,
+                senderName: req.user.name,
             },
         });
 

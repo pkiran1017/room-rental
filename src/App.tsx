@@ -176,6 +176,42 @@ function App() {
         void syncPushSubscription();
     }, []);
 
+    // Listen for push notifications from service worker when app is open/focused
+    useEffect(() => {
+        if (!navigator.serviceWorker) {
+            return;
+        }
+
+        const handleServiceWorkerMessage = (event: MessageEvent) => {
+            if (event.data && event.data.type === 'PUSH_NOTIFICATION') {
+                const payload = event.data.payload;
+                
+                // Import the singleton notification service
+                import('@/services/messageNotificationService').then(({ messageNotificationService }) => {
+                    if (messageNotificationService) {
+                        const title = payload.senderName || payload.title || 'New Message';
+                        
+                        messageNotificationService.showNotification({
+                            title,
+                            body: payload.body || 'Sent you a message',
+                            icon: payload.senderAvatar || payload.icon,
+                            tag: payload.tag,
+                            data: payload.data,
+                        });
+                    }
+                }).catch(() => {
+                    // If notification service isn't available, skip
+                });
+            }
+        };
+
+        navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
+
+        return () => {
+            navigator.serviceWorker?.removeEventListener('message', handleServiceWorkerMessage);
+        };
+    }, []);
+
     return (
         <SiteSettingsProvider>
             <AuthProvider>

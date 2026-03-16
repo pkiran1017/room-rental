@@ -59,7 +59,7 @@ const AdminSiteSettingsPage: React.FC = () => {
             setUploading(fileType);
             const updated = await uploadSiteFile(fileType, file);
             setFormData(updated);
-            await refreshSettings();
+            await refreshSettings(true);
             toast.success(`${fileType.charAt(0).toUpperCase() + fileType.slice(1)} uploaded successfully`);
         } catch (error) {
             toast.error(`Failed to upload ${fileType}`);
@@ -73,7 +73,7 @@ const AdminSiteSettingsPage: React.FC = () => {
             setSaving(true);
             const updated = await updateAdminSiteSettings(formData);
             setFormData(updated);
-            await refreshSettings();
+            await refreshSettings(true);
             toast.success('Site settings updated successfully');
         } catch (error) {
             toast.error('Failed to update site settings');

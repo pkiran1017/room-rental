@@ -156,9 +156,12 @@ export const getProjectSiteSettingsFallback = async (): Promise<SiteSettings | n
     }
 };
 
-export const getPublicSiteSettings = async (): Promise<SiteSettings> => {
+export const getPublicSiteSettings = async (forceRefresh = false): Promise<SiteSettings> => {
     try {
-        const response = await get<ApiResponse<SiteSettings>>('/public/site-settings');
+        const endpoint = forceRefresh
+            ? `/public/site-settings?t=${Date.now()}`
+            : '/public/site-settings';
+        const response = await get<ApiResponse<SiteSettings>>(endpoint);
         const normalized = normalizeSiteSettings(response.data);
         cacheSiteSettings(normalized);
         return normalized;

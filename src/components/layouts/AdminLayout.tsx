@@ -228,7 +228,7 @@ const AdminLayout: React.FC = () => {
                         />
 
                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild><Button variant="ghost" className="gap-2 px-2 sm:px-3 hover:bg-green-50">
+                            <DropdownMenuTrigger asChild><Button variant="ghost" className="hidden sm:inline-flex gap-2 px-2 sm:px-3 hover:bg-green-50">
                                     <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-md">
                                         <User className="w-4 h-4 text-white" />
                                     </div>

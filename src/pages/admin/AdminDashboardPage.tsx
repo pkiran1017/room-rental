@@ -542,12 +542,12 @@ const AdminDashboardPage: React.FC = () => {
                 <TabsContent value="brokers">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center justify-between">
-                                <span className="flex items-center gap-2">
+                            <CardTitle className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <span className="flex items-center gap-2 min-w-0">
                                     <UserCheck className="h-5 w-5" />
-                                    Pending Broker Approvals
+                                    <span className="truncate">Pending Broker Approvals</span>
                                 </span>
-                                <Badge variant="outline">{pendingBrokers.length}</Badge>
+                                <Badge variant="outline" className="w-fit">{pendingBrokers.length}</Badge>
                             </CardTitle>
                             <CardDescription>Review and approve broker applications</CardDescription>
                         </CardHeader>
@@ -557,17 +557,17 @@ const AdminDashboardPage: React.FC = () => {
                             ) : (
                                 <div className="space-y-4">
                                     {pendingBrokers.slice(0, 5).map((broker: Broker) => (
-                                        <div key={broker.id} className="flex flex-col gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors lg:flex-row lg:items-start lg:justify-between">
-                                            <div className="space-y-1 flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <p className="font-semibold">{broker.name}</p>
-                                                    <Badge variant="secondary" className="text-xs">{broker.unique_id}</Badge>
+                                        <div key={broker.id} className="flex flex-col gap-4 p-3 sm:p-4 border rounded-lg hover:bg-muted/50 transition-colors lg:flex-row lg:items-start lg:justify-between">
+                                            <div className="space-y-1 flex-1 min-w-0">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <p className="font-semibold break-words">{broker.name}</p>
+                                                    <Badge variant="secondary" className="text-xs max-w-full break-all">{broker.unique_id}</Badge>
                                                 </div>
-                                                <p className="text-sm text-muted-foreground">{broker.email}</p>
+                                                <p className="text-sm text-muted-foreground break-all">{broker.email}</p>
                                                 <p className="text-xs text-muted-foreground"><span className="font-medium">Contact:</span> {broker.contact || 'N/A'}</p>
                                                 <p className="text-xs text-muted-foreground"><span className="font-medium">Area:</span> {broker.broker_area || 'N/A'}</p>
                                                 {(broker as any).selected_plan && (
-                                                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                                                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded break-words">
                                                         <p className="text-xs font-semibold text-blue-900">Requested Plan:</p>
                                                         <p className="text-xs text-blue-800">{(broker as any).selected_plan.plan_name} - ₹{(broker as any).selected_plan.price} ({(broker as any).selected_plan.duration_days} days)</p>
                                                     </div>
@@ -577,7 +577,7 @@ const AdminDashboardPage: React.FC = () => {
                                                 )}
                                                 <p className="text-xs text-muted-foreground">Registered: {new Date(broker.registration_date).toLocaleDateString()}</p>
                                             </div>
-                                            <div className="grid gap-2 sm:grid-cols-2 lg:ml-4 lg:flex lg:w-40 lg:flex-col">
+                                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 lg:ml-4 lg:flex lg:w-40 lg:flex-col">
                                                 <Button size="sm" onClick={() => openApprovalDialog('broker', broker.id, broker.name, broker.selected_plan_id)} disabled={processingBrokerId === broker.id} className="bg-green-600 hover:bg-green-700">
                                                     <CheckCircle2 className="h-4 w-4 mr-1" />
                                                     Approve

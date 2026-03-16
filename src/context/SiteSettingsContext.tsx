@@ -11,7 +11,7 @@ import {
 interface SiteSettingsContextValue {
     settings: SiteSettings;
     isLoading: boolean;
-    refreshSettings: () => Promise<void>;
+    refreshSettings: (forceRefresh?: boolean) => Promise<void>;
 }
 
 const SiteSettingsContext = createContext<SiteSettingsContextValue | undefined>(undefined);
@@ -26,9 +26,9 @@ export const SiteSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     });
     const [isLoading, setIsLoading] = useState(true);
 
-    const refreshSettings = async () => {
+    const refreshSettings = async (forceRefresh = false) => {
         try {
-            const data = await getPublicSiteSettings();
+            const data = await getPublicSiteSettings(forceRefresh);
             const nextSettings = {
                 ...defaultSiteSettings,
                 ...data

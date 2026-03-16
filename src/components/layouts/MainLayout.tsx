@@ -42,6 +42,7 @@ const MainLayout: React.FC = () => {
     const [scrolled, setScrolled] = useState(false);
 
     const businessName = settings.businessName || 'RoomRental';
+    const businessTagline = settings.businessTagline || 'Find Your Perfect Roommate';
     const supportEmail = settings.supportEmail || 'customer@support.com';
     const supportPhone = settings.supportPhone || '+91 99999 99999';
     const supportAddress = settings.supportAddress || 'Pune, Maharashtra';
@@ -115,9 +116,9 @@ const MainLayout: React.FC = () => {
                                 <Building2 className="w-6 h-6 text-white" />
                             </div>
                         )}
-                        <div className="flex flex-col">
+                        <div className="flex min-w-0 flex-col">
                             <span
-                                className={`text-2xl font-extrabold tracking-tight ${
+                                className={`text-lg sm:text-2xl font-extrabold tracking-tight ${
                                     scrolled
                                         ? 'bg-gradient-to-r from-green-primary to-green-secondary bg-clip-text text-transparent'
                                         : 'text-white'
@@ -125,8 +126,8 @@ const MainLayout: React.FC = () => {
                             >
                                 {businessName}
                             </span>
-                            <span className={`text-[10px] font-medium -mt-1 ${scrolled ? 'text-emerald-700/80' : 'text-white/80'}`}>
-                                Find Your Perfect Home
+                            <span className={`hidden sm:block text-[10px] font-medium -mt-1 truncate ${scrolled ? 'text-emerald-700/80' : 'text-white/80'}`}>
+                                {businessTagline}
                             </span>
                         </div>
                     </Link>
@@ -174,7 +175,7 @@ const MainLayout: React.FC = () => {
                                     <DropdownMenuTrigger asChild>
                                         <Button
                                             variant="ghost"
-                                            className={`gap-3 rounded-xl px-3 h-11 transition-all duration-300 ${
+                                            className={`hidden sm:inline-flex gap-3 rounded-xl px-3 h-11 transition-all duration-300 ${
                                                 scrolled
                                                     ? 'hover:bg-emerald-50 border border-emerald-200'
                                                     : 'hover:bg-white/20 border border-white/25'
@@ -277,7 +278,7 @@ const MainLayout: React.FC = () => {
                                             )}
                                             <div className="flex flex-col">
                                                 <span className="text-xl font-extrabold text-white">{businessName}</span>
-                                                <span className="text-xs text-white/80">Find Your Home</span>
+                                                <span className="text-xs text-white/80 line-clamp-1">{businessTagline}</span>
                                             </div>
                                         </Link>
                                     </SheetClose>
@@ -347,6 +348,26 @@ const MainLayout: React.FC = () => {
                                                     Dashboard
                                                 </Link>
                                             </SheetClose>
+                                            <SheetClose asChild>
+                                                <Link
+                                                    to="/dashboard/profile"
+                                                    className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold text-gray-700 hover:bg-green-50 hover:text-green-primary transition-all duration-300 hover:translate-x-1"
+                                                >
+                                                    <User className="w-5 h-5" />
+                                                    Profile
+                                                </Link>
+                                            </SheetClose>
+                                            {user?.role === 'Admin' && (
+                                                <SheetClose asChild>
+                                                    <Link
+                                                        to="/admin"
+                                                        className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold text-gray-700 hover:bg-green-50 hover:text-green-primary transition-all duration-300 hover:translate-x-1"
+                                                    >
+                                                        <LayoutDashboard className="w-5 h-5" />
+                                                        Admin Panel
+                                                    </Link>
+                                                </SheetClose>
+                                            )}
                                             <button
                                                 onClick={handleLogout}
                                                 className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 transition-all duration-300 hover:translate-x-1"

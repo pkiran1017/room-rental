@@ -129,19 +129,61 @@ router.post('/register', authRateLimiter, [
         // Determine broker status
         const brokerStatus = role === 'Broker' ? 'Pending' : null;
 
-        // Insert user
-        const result = await executeQuery(
-            `INSERT INTO users (
+        const baseInsertSql = `INSERT INTO users (
                 unique_id, name, email, contact, gender, pincode, 
                 password_hash, role, broker_area, broker_status, selected_plan_id,
                 otp_code, otp_expires_at, is_verified, registration_date, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'Active')`,
-            [
-                uniqueId, name, email, contact, gender, pincode,
-                passwordHash, role, brokerArea || null, brokerStatus, selectedPlanId || null,
-                otp, otpExpiresAt, false
-            ]
-        );
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'Active')`;
+        const baseInsertParams = [
+            uniqueId, name, email, contact, gender, pincode,
+            passwordHash, role, brokerArea || null, brokerStatus, selectedPlanId || null,
+            otp, otpExpiresAt, false
+        ];
+
+        let result;
+        let insertedUserId;
+
+        try {
+            // Preferred path when id is AUTO_INCREMENT.
+            result = await executeQuery(baseInsertSql, baseInsertParams);
+            insertedUserId = result.insertId;
+        } catch (insertError) {
+            const missingIdDefault =
+                insertError &&
+                insertError.code === 'ER_NO_DEFAULT_FOR_FIELD' &&
+                insertError.message &&
+                insertError.message.includes("Field 'id'");
+
+            if (!missingIdDefault) {
+                throw insertError;
+            }
+
+            // Fallback path for imported schemas where users.id is not AUTO_INCREMENT.
+            for (let attempt = 0; attempt < 3; attempt += 1) {
+                const maxRows = await executeQuery('SELECT COALESCE(MAX(id), 0) AS maxId FROM users');
+                const nextId = Number(maxRows[0]?.maxId || 0) + 1;
+
+                try {
+                    const fallbackResult = await executeQuery(
+                        `INSERT INTO users (
+                            id, unique_id, name, email, contact, gender, pincode,
+                            password_hash, role, broker_area, broker_status, selected_plan_id,
+                            otp_code, otp_expires_at, is_verified, registration_date, status
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'Active')`,
+                        [nextId, ...baseInsertParams]
+                    );
+
+                    result = fallbackResult;
+                    insertedUserId = nextId;
+                    break;
+                } catch (fallbackError) {
+                    if (fallbackError?.code === 'ER_DUP_ENTRY' && attempt < 2) {
+                        continue;
+                    }
+                    throw fallbackError;
+                }
+            }
+        }
 
         // Send OTP email
         await sendOTPEmail(email, otp, name);
@@ -155,7 +197,7 @@ router.post('/register', authRateLimiter, [
             success: true,
             message: 'Registration successful. Please verify your email with OTP.',
             data: {
-                userId: result.insertId,
+                userId: insertedUserId || result.insertId,
                 uniqueId,
                 email,
                 role,

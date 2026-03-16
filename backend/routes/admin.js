@@ -258,6 +258,54 @@ const ensureAdsTable = async () => {
     hasVerifiedAdsTable = true;
 };
 
+const insertAdminNotification = async ({
+    userId,
+    type,
+    title,
+    message,
+    referenceId = null,
+    referenceType = null,
+}) => {
+    const baseSql = `INSERT INTO notifications (user_id, type, title, message, reference_id, reference_type)
+                     VALUES (?, ?, ?, ?, ?, ?)`;
+    const baseParams = [userId, type, title, message, referenceId, referenceType];
+
+    try {
+        await executeQuery(baseSql, baseParams);
+        return;
+    } catch (error) {
+        const missingIdDefault =
+            error &&
+            error.code === 'ER_NO_DEFAULT_FOR_FIELD' &&
+            error.message &&
+            error.message.includes("Field 'id'");
+
+        if (!missingIdDefault) {
+            throw error;
+        }
+    }
+
+    // Fallback for imports where notifications.id is not AUTO_INCREMENT.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+        const maxRows = await executeQuery('SELECT COALESCE(MAX(id), 0) AS maxId FROM notifications');
+        const nextId = Number(maxRows[0]?.maxId || 0) + 1;
+
+        try {
+            await executeQuery(
+                `INSERT INTO notifications (id, user_id, type, title, message, reference_id, reference_type)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [nextId, ...baseParams]
+            );
+            return;
+        } catch (fallbackError) {
+            if (fallbackError?.code === 'ER_DUP_ENTRY' && attempt < 2) {
+                continue;
+            }
+            throw fallbackError;
+        }
+    }
+};
+
 router.get('/site-settings', authenticate, requireAdmin, async (req, res, next) => {
     try {
         const settings = await getSiteSettings();
@@ -1084,11 +1132,12 @@ router.put('/brokers/:id/status', authenticate, requireAdmin, [
         await sendBrokerApprovalEmail(brokers[0].email, brokers[0].name, status, remark);
 
         // Create notification
-        await executeQuery(
-            `INSERT INTO notifications (user_id, type, title, message)
-             VALUES (?, 'Broker_Approved', ?, ?)`,
-            [req.params.id, `Broker Account ${requestedStatus}`, `Your broker account has been ${requestedStatus.toLowerCase()}`]
-        );
+        await insertAdminNotification({
+            userId: req.params.id,
+            type: 'Broker_Approved',
+            title: `Broker Account ${requestedStatus}`,
+            message: `Your broker account has been ${requestedStatus.toLowerCase()}`,
+        });
 
         res.json({
             success: true,
@@ -1355,11 +1404,14 @@ router.put('/rooms/:roomId/status', authenticate, requireAdmin, [
         await sendRoomApprovalEmail(room.email, room.name, room.title, room.room_id, status);
 
         // Create notification
-        await executeQuery(
-            `INSERT INTO notifications (user_id, type, title, message, reference_id, reference_type)
-             VALUES (?, 'Room_Approved', ?, ?, ?, 'room')`,
-            [room.user_id, `Room ${status}`, `Your room "${room.title}" has been ${status.toLowerCase()}`, room.room_id]
-        );
+        await insertAdminNotification({
+            userId: room.user_id,
+            type: 'Room_Approved',
+            title: `Room ${status}`,
+            message: `Your room "${room.title}" has been ${status.toLowerCase()}`,
+            referenceId: room.room_id,
+            referenceType: 'room',
+        });
 
         res.json({
             success: true,
@@ -2378,11 +2430,14 @@ const decideSubscriptionUpgradeRequestHandler = async (req, res, next) => {
                 [selectedPlanId, request.user_id]
             );
 
-            await executeQuery(
-                `INSERT INTO notifications (user_id, type, title, message, reference_id, reference_type)
-                 VALUES (?, 'System', 'Subscription Updated', ?, ?, 'subscription')`,
-                [request.user_id, 'Your subscription upgrade request has been approved and activated.', id]
-            );
+            await insertAdminNotification({
+                userId: request.user_id,
+                type: 'System',
+                title: 'Subscription Updated',
+                message: 'Your subscription upgrade request has been approved and activated.',
+                referenceId: id,
+                referenceType: 'subscription',
+            });
 
             const selectedPlanRows = await executeQuery(
                 'SELECT plan_name FROM plans WHERE id = ? LIMIT 1',
@@ -2406,11 +2461,14 @@ const decideSubscriptionUpgradeRequestHandler = async (req, res, next) => {
                 [`ADMIN_REJECTED_${Date.now()}`, normalizedRemark, id]
             );
 
-            await executeQuery(
-                `INSERT INTO notifications (user_id, type, title, message, reference_id, reference_type)
-                 VALUES (?, 'System', 'Subscription Request Rejected', ?, ?, 'subscription')`,
-                [request.user_id, normalizedRemark || 'Your subscription upgrade request has been rejected. Please contact support.', id]
-            );
+            await insertAdminNotification({
+                userId: request.user_id,
+                type: 'System',
+                title: 'Subscription Request Rejected',
+                message: normalizedRemark || 'Your subscription upgrade request has been rejected. Please contact support.',
+                referenceId: id,
+                referenceType: 'subscription',
+            });
 
             await sendSubscriptionDecisionEmail(
                 request.broker_email,
@@ -2669,11 +2727,14 @@ router.put('/broker-subscriptions/:id', authenticate, requireAdmin, [
             ? `Your subscription has been updated. Admin Remark: ${admin_remark}`
             : `Your subscription has been updated.`;
 
-        await executeQuery(
-            `INSERT INTO notifications (user_id, type, title, message, reference_id, reference_type)
-             VALUES (?, 'System', 'Subscription Updated', ?, ?, 'subscription')`,
-            [subscription.user_id, notificationMessage, id]
-        );
+        await insertAdminNotification({
+            userId: subscription.user_id,
+            type: 'System',
+            title: 'Subscription Updated',
+            message: notificationMessage,
+            referenceId: id,
+            referenceType: 'subscription',
+        });
 
         // Send email notification
         if (broker && plan) {

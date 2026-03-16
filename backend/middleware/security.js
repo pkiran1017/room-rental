@@ -166,8 +166,9 @@ const setSecurityHeaders = (req, res, next) => {
     res.setHeader('X-DNS-Prefetch-Control', 'off');
 
     // Reduce cross-origin attack surface for modern browsers.
+    // cross-origin is required: frontend (Vercel) and backend (Render) are on different origins.
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-    res.setHeader('Cross-Origin-Resource-Policy', 'same-site');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res.setHeader('Origin-Agent-Cluster', '?1');
     res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
     

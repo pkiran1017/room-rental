@@ -273,16 +273,20 @@ router.get('/rooms', async (req, res, next) => {
 
         // Get total count for pagination
         const countResult = await executeQuery(
-            sql.replace(/SELECT.*?FROM/s, 'SELECT COUNT(*) as total FROM'),
+            sql.replace(/SELECT[\s\S]*?FROM/, 'SELECT COUNT(*) as total FROM'),
             params
         );
 
-        sql += ` ORDER BY ${searchOrdering} LIMIT ? OFFSET ?`;
+        // Inline LIMIT/OFFSET as integer literals to avoid TiDB prepared-statement
+        // type-coercion issues ("Incorrect arguments to LIMIT").
+        const safeLimit = Math.max(1, Math.min(100, parseInt(limit, 10) || 12));
+        const safePage  = Math.max(1, parseInt(page, 10) || 1);
+        const safeOffset = (safePage - 1) * safeLimit;
+
+        sql += ` ORDER BY ${searchOrdering} LIMIT ${safeLimit} OFFSET ${safeOffset}`;
         const resultParams = [
             ...searchScoreParams,
-            ...params,
-            parseInt(limit),
-            (parseInt(page) - 1) * parseInt(limit)
+            ...params
         ];
 
         const rooms = await executeQuery(sql, resultParams);
@@ -291,10 +295,10 @@ router.get('/rooms', async (req, res, next) => {
             success: true,
             data: rooms,
             pagination: {
-                currentPage: parseInt(page),
-                totalPages: Math.ceil(countResult[0].total / parseInt(limit)),
+                currentPage: safePage,
+                totalPages: Math.ceil(countResult[0].total / safeLimit),
                 totalItems: countResult[0].total,
-                itemsPerPage: parseInt(limit)
+                itemsPerPage: safeLimit
             }
         });
 

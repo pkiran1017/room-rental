@@ -224,6 +224,7 @@ app.use('/uploads', express.static('uploads', {
     maxAge: '7d',
     setHeaders: (res) => {
         res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
         res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
     }
 }));

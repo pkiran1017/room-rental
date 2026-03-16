@@ -1,0 +1,136 @@
+const express = require('express');
+const router = express.Router();
+
+const { executeQuery } = require('../config/database');
+const { authenticate } = require('../middleware/auth');
+
+// Get user's notifications
+router.get('/', authenticate, async (req, res, next) => {
+    try {
+        const { isRead, page = 1, limit = 20 } = req.query;
+
+        let sql = `
+            SELECT n.*, 
+                   CASE 
+                       WHEN n.reference_type = 'room' THEN (SELECT title FROM rooms WHERE room_id = n.reference_id)
+                       WHEN n.reference_type = 'chat' THEN (SELECT u.name FROM chat_rooms cr JOIN users u ON 
+                           CASE WHEN cr.participant_1 = ? THEN cr.participant_2 ELSE cr.participant_1 END = u.id 
+                           WHERE cr.room_id = n.reference_id)
+                       ELSE NULL
+                   END as reference_title
+            FROM notifications n
+            WHERE n.user_id = ?
+        `;
+        const params = [req.user.userId, req.user.userId];
+
+        if (isRead !== undefined) {
+            sql += ' AND n.is_read = ?';
+            params.push(isRead === 'true' ? 1 : 0);
+        }
+
+        sql += ' ORDER BY n.created_at DESC LIMIT ? OFFSET ?';
+        params.push(parseInt(limit), (parseInt(page) - 1) * parseInt(limit));
+
+        const notifications = await executeQuery(sql, params);
+
+        // Get unread count
+        const unreadResult = await executeQuery(
+            'SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = FALSE',
+            [req.user.userId]
+        );
+
+        res.json({
+            success: true,
+            data: notifications,
+            unreadCount: unreadResult[0].count
+        });
+
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Mark notification as read
+router.put('/:id/read', authenticate, async (req, res, next) => {
+    try {
+        const result = await executeQuery(
+            'UPDATE notifications SET is_read = TRUE, read_at = NOW() WHERE id = ? AND user_id = ?',
+            [req.params.id, req.user.userId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Notification not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Notification marked as read'
+        });
+
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Mark all notifications as read
+router.put('/read-all', authenticate, async (req, res, next) => {
+    try {
+        await executeQuery(
+            'UPDATE notifications SET is_read = TRUE, read_at = NOW() WHERE user_id = ? AND is_read = FALSE',
+            [req.user.userId]
+        );
+
+        res.json({
+            success: true,
+            message: 'All notifications marked as read'
+        });
+
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Delete notification
+router.delete('/:id', authenticate, async (req, res, next) => {
+    try {
+        await executeQuery(
+            'DELETE FROM notifications WHERE id = ? AND user_id = ?',
+            [req.params.id, req.user.userId]
+        );
+
+        res.json({
+            success: true,
+            message: 'Notification deleted'
+        });
+
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Get notification preferences (placeholder for future)
+router.get('/preferences', authenticate, async (req, res, next) => {
+    try {
+        // In future, this will return user's notification preferences
+        res.json({
+            success: true,
+            data: {
+                emailNotifications: true,
+                pushNotifications: true,
+                smsNotifications: false,
+                roomUpdates: true,
+                expenseReminders: true,
+                chatMessages: true,
+                marketingEmails: false
+            }
+        });
+
+    } catch (error) {
+        next(error);
+    }
+});
+
+module.exports = router;

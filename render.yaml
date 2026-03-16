@@ -1,0 +1,95 @@
+services:
+  - type: web
+    name: room-rental-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    autoDeploy: true
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_SSL
+        value: "false"
+      - key: DB_SSL_REJECT_UNAUTHORIZED
+        value: "true"
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: IMAGE_STORAGE_API_KEY
+        sync: false
+      - key: IMAGE_STORAGE_URL
+        value: https://api.imgbb.com/1/upload
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_SECURE
+        value: "false"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: SUPPORT_EMAIL
+        sync: false
+      - key: NOTIFICATION_EMAIL
+        sync: false
+      - key: SITE_URL
+        sync: false
+      - key: APP_NAME
+        value: RoomRental
+      - key: BUSINESS_TAGLINE
+        value: Find Your Perfect Roommate
+      - key: SUPPORT_PHONE
+        sync: false
+      - key: BUSINESS_ADDRESS
+        sync: false
+      - key: DEFAULT_CITY
+        value: Pune
+      - key: MAX_IMAGE_SIZE_KB
+        value: "500"
+      - key: MAX_IMAGES_PER_ROOM
+        value: "5"
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "900000"
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: "100"
+      - key: AUTH_RATE_LIMIT_WINDOW_MS
+        value: "900000"
+      - key: AUTH_RATE_LIMIT_MAX_REQUESTS
+        value: "20"
+      - key: PUBLIC_RATE_LIMIT_WINDOW_MS
+        value: "900000"
+      - key: PUBLIC_RATE_LIMIT_MAX_REQUESTS
+        value: "300"
+      - key: REQUEST_TIMEOUT_MS
+        value: "60000"
+      - key: REQUEST_BODY_LIMIT
+        value: 2mb
+      - key: TRUST_PROXY
+        value: "1"

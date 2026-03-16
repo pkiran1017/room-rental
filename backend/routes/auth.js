@@ -624,8 +624,8 @@ router.post('/forgot-password', [
 
         const user = users[0];
 
-        // Generate reset token
-        const resetToken = require('crypto').randomBytes(32).toString('hex');
+        // users.otp_code is varchar(10) in production schema, so keep token length within 10 chars.
+        const resetToken = require('crypto').randomBytes(5).toString('hex');
         const resetExpiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
         await executeQuery(
@@ -634,7 +634,10 @@ router.post('/forgot-password', [
         );
 
         // Send password reset email
-        await sendPasswordResetEmail(email, user.name, resetToken);
+        const emailResult = await sendPasswordResetEmail(email, user.name, resetToken);
+        if (!emailResult?.success) {
+            throw new AppError('Failed to send password reset email. Please try again.', 500);
+        }
 
         res.json({
             success: true,

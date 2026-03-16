@@ -489,8 +489,8 @@ router.get('/brokers', async (req, res, next) => {
         const countRows = await executeQuery(countSql, params);
         const totalItems = countRows?.[0]?.total || 0;
 
-        sql += ` ORDER BY ${orderBy} LIMIT ? OFFSET ?`;
-        params.push(safeLimit, safeOffset);
+        // TiDB does not support placeholders for LIMIT/OFFSET in prepared statements.
+        sql += ` ORDER BY ${orderBy} LIMIT ${safeLimit} OFFSET ${safeOffset}`;
 
         const brokers = await executeQuery(sql, params);
 

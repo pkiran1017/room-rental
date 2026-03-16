@@ -1546,8 +1546,8 @@ router.get('/leads', authenticate, requireAdmin, async (req, res, next) => {
              FROM contact_leads
              ${whereClause}
              ORDER BY submitted_at DESC
-             LIMIT ? OFFSET ?`,
-            [...params, limit, offset]
+             LIMIT ${limit} OFFSET ${offset}`,
+            params
         );
 
         const [countResult] = await executeQuery(
@@ -2470,6 +2470,9 @@ router.get('/broker-subscriptions', authenticate, requireAdmin, async (req, res,
 
         const whereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
+        const safeLimit = Math.min(100, Math.max(1, Number(limit) || 20));
+        const safeOffset = (Math.max(1, Number(page) || 1) - 1) * safeLimit;
+
         const subscriptions = await executeQuery(`
             SELECT 
                 s.id,
@@ -2499,8 +2502,8 @@ router.get('/broker-subscriptions', authenticate, requireAdmin, async (req, res,
             INNER JOIN plans p ON s.plan_id = p.id
             ${whereClause}
             ORDER BY s.created_at DESC
-            LIMIT ? OFFSET ?
-        `, [...queryParams, Number(limit), offset]);
+            LIMIT ${safeLimit} OFFSET ${safeOffset}
+        `, queryParams);
 
         const countResult = await executeQuery(`
             SELECT COUNT(DISTINCT s.id) as total

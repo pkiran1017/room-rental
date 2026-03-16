@@ -316,6 +316,9 @@ router.get('/my-rooms', authenticate, async (req, res, next) => {
 router.get('/notifications', authenticate, async (req, res, next) => {
     try {
         const { isRead, page = 1, limit = 20 } = req.query;
+        const safePage = Math.max(1, parseInt(page, 10) || 1);
+        const safeLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+        const safeOffset = (safePage - 1) * safeLimit;
 
         let sql = 'SELECT * FROM notifications WHERE user_id = ?';
         const params = [req.user.userId];
@@ -325,8 +328,8 @@ router.get('/notifications', authenticate, async (req, res, next) => {
             params.push(isRead === 'true' ? 1 : 0);
         }
 
-        sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-        params.push(parseInt(limit), (parseInt(page) - 1) * parseInt(limit));
+        // TiDB does not support placeholders for LIMIT/OFFSET in prepared statements.
+        sql += ` ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`;
 
         const notifications = await executeQuery(sql, params);
 

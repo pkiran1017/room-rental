@@ -408,6 +408,9 @@ router.get('/', authenticate, requireMember, async (req, res, next) => {
         await ensureExpenseGroupSchema();
         await ensureExpenseSchema();
         const { groupId, month, year, page = 1, limit = 20 } = req.query;
+        const safePage = Math.max(1, parseInt(page, 10) || 1);
+        const safeLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+        const safeOffset = (safePage - 1) * safeLimit;
         const userEmail = await getCurrentUserEmail(req.user.userId);
 
         let sql = `
@@ -434,8 +437,8 @@ router.get('/', authenticate, requireMember, async (req, res, next) => {
             params.push(parseInt(month, 10), parseInt(year, 10));
         }
 
-        sql += ' ORDER BY e.expense_date DESC LIMIT ? OFFSET ?';
-        params.push(parseInt(limit, 10), (parseInt(page, 10) - 1) * parseInt(limit, 10));
+        // TiDB does not support placeholders for LIMIT/OFFSET in prepared statements.
+        sql += ` ORDER BY e.expense_date DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`;
 
         const expenses = await executeQuery(sql, params);
 
@@ -453,6 +456,10 @@ router.get('/', authenticate, requireMember, async (req, res, next) => {
         res.json({
             success: true,
             data: expenses,
+            pagination: {
+                currentPage: safePage,
+                itemsPerPage: safeLimit
+            }
         });
     } catch (error) {
         next(error);

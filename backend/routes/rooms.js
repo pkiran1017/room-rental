@@ -409,6 +409,9 @@ router.post('/upload-images', optionalAuth, handleUpload('images', 5), async (re
 router.get('/my-rooms', authenticate, requireMember, async (req, res, next) => {
     try {
         const { status, page = 1, limit = 10 } = req.query;
+        const safePage = Math.max(1, parseInt(page, 10) || 1);
+        const safeLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
+        const safeOffset = (safePage - 1) * safeLimit;
 
         let sql = `
             SELECT r.id, r.room_id, r.listing_type, r.title, r.room_type, 
@@ -425,8 +428,8 @@ router.get('/my-rooms', authenticate, requireMember, async (req, res, next) => {
             params.push(status);
         }
 
-        sql += ' ORDER BY r.post_date DESC LIMIT ? OFFSET ?';
-        params.push(parseInt(limit), (parseInt(page) - 1) * parseInt(limit));
+        // TiDB does not support placeholders for LIMIT/OFFSET in prepared statements.
+        sql += ` ORDER BY r.post_date DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`;
 
         const rooms = await executeQuery(sql, params);
 
@@ -440,10 +443,10 @@ router.get('/my-rooms', authenticate, requireMember, async (req, res, next) => {
             success: true,
             data: rooms,
             pagination: {
-                currentPage: parseInt(page),
-                totalPages: Math.ceil(countResult[0].total / parseInt(limit)),
+                currentPage: safePage,
+                totalPages: Math.ceil(countResult[0].total / safeLimit),
                 totalItems: countResult[0].total,
-                itemsPerPage: parseInt(limit)
+                itemsPerPage: safeLimit
             }
         });
 

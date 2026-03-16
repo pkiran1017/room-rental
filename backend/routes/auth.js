@@ -410,22 +410,24 @@ router.post('/login', authRateLimiter, [
 
         // Check if email is verified
         if (!user.is_verified) {
-            // Generate new OTP for verification
-            const otp = generateOTP();
-            const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+            const resetToken = require('crypto').randomBytes(5).toString('hex');
+            const resetExpiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
             await executeQuery(
                 'UPDATE users SET otp_code = ?, otp_expires_at = ? WHERE id = ?',
-                [otp, otpExpiresAt, user.id]
+                [resetToken, resetExpiresAt, user.id]
             );
 
-            await sendOTPEmail(email, otp, user.name);
+            const emailResult = await sendPasswordResetEmail(email, user.name, resetToken);
+            if (!emailResult?.success) {
+                throw new AppError('Email not verified and reset link could not be sent. Please try again.', 500);
+            }
 
             return res.status(403).json({
                 success: false,
-                message: 'Email not verified. OTP sent for verification.',
+                message: 'Email not verified. Password reset link sent to your email. Use it to verify and login.',
                 data: {
-                    requiresVerification: true,
+                    requiresPasswordReset: true,
                     email: user.email
                 }
             });
@@ -610,7 +612,7 @@ router.post('/forgot-password', [
         const { email } = req.body;
 
         const users = await executeQuery(
-            'SELECT id, name FROM users WHERE email = ? AND is_verified = TRUE',
+            'SELECT id, name FROM users WHERE email = ?',
             [email]
         );
 
@@ -684,8 +686,9 @@ router.post('/reset-password', [
         const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS) || 12;
         const passwordHash = await bcrypt.hash(password, saltRounds);
 
+        // Treat reset-link completion as email ownership verification.
         await executeQuery(
-            'UPDATE users SET password_hash = ?, otp_code = NULL, otp_expires_at = NULL WHERE id = ?',
+            'UPDATE users SET password_hash = ?, is_verified = TRUE, otp_code = NULL, otp_expires_at = NULL WHERE id = ?',
             [passwordHash, userId]
         );
 

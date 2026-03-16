@@ -81,7 +81,7 @@ const tryInsertWithExplicitIdFallback = async (sql, params, originalError) => {
     const nextId = Number(maxRows?.[0]?.maxId || 0) + 1;
 
     const updatedColumnsSegment = `(${['id', ...columns].map((column) => `\`${column}\``).join(', ')})`;
-    const rewrittenSql = String(sql).replace(/\(([^)]+)\)\s*values\s*\(/i, `${updatedColumnsSegment} VALUES (`);
+    const rewrittenSql = String(sql).replace(/\(([^)]+)\)\s*values\s*\(/i, `${updatedColumnsSegment} VALUES (?, `);
     const rewrittenParams = [nextId, ...(Array.isArray(params) ? params : [])];
 
     const [results] = await pool.execute(rewrittenSql, rewrittenParams);

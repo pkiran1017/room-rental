@@ -7,7 +7,7 @@
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET SQL_MODE = "STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION";
 START TRANSACTION;
 SET time_zone = "+00:00";
 
@@ -24,10 +24,10 @@ SET NAMES utf8mb4;
 --
 
 CREATE TABLE `ads` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `banner_title` varchar(150) NOT NULL,
   `description` text DEFAULT NULL,
-  `images_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`images_json`)),
+  `images_json` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `priority` int(11) NOT NULL DEFAULT 0,
   `card_placement` varchar(50) DEFAULT 'MP_Search',
   `start_date` date NOT NULL,
@@ -52,13 +52,13 @@ INSERT INTO `ads` (`id`, `banner_title`, `description`, `images_json`, `priority
 --
 
 CREATE TABLE `audit_logs` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) DEFAULT NULL,
   `action` varchar(100) NOT NULL,
   `entity_type` varchar(50) NOT NULL,
   `entity_id` varchar(50) DEFAULT NULL,
-  `old_values` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`old_values`)),
-  `new_values` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`new_values`)),
+  `old_values` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  `new_values` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `ip_address` varchar(45) DEFAULT NULL,
   `user_agent` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
@@ -71,7 +71,7 @@ CREATE TABLE `audit_logs` (
 --
 
 CREATE TABLE `chat_rooms` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `room_id` varchar(50) NOT NULL,
   `room_listing_id` int(11) DEFAULT NULL COMMENT 'Reference to rooms table if room-related',
   `participant_1` int(11) NOT NULL,
@@ -96,7 +96,7 @@ INSERT INTO `chat_rooms` (`id`, `room_id`, `room_listing_id`, `participant_1`, `
 --
 
 CREATE TABLE `contact_leads` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(120) NOT NULL,
   `email` varchar(160) NOT NULL,
   `phone` varchar(40) DEFAULT NULL,
@@ -136,7 +136,7 @@ INSERT INTO `contact_leads` (`id`, `name`, `email`, `phone`, `subject`, `message
 --
 
 CREATE TABLE `existing_roommates` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `room_id` int(11) NOT NULL,
   `name` varchar(100) NOT NULL,
   `city` varchar(100) NOT NULL,
@@ -157,7 +157,7 @@ INSERT INTO `existing_roommates` (`id`, `room_id`, `name`, `city`, `created_at`)
 --
 
 CREATE TABLE `expenses` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `expense_id` varchar(20) NOT NULL,
   `title` varchar(200) NOT NULL,
   `cost` decimal(12,2) NOT NULL,
@@ -196,7 +196,7 @@ INSERT INTO `expenses` (`id`, `expense_id`, `title`, `cost`, `expense_date`, `pa
 --
 
 CREATE TABLE `expense_splits` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `expense_id` int(11) NOT NULL,
   `roommate_id` int(11) NOT NULL COMMENT 'Reference to roommates table',
   `amount` decimal(12,2) NOT NULL,
@@ -235,7 +235,7 @@ INSERT INTO `expense_splits` (`id`, `expense_id`, `roommate_id`, `amount`, `is_p
 --
 
 CREATE TABLE `maharashtra_cities` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `city_name` varchar(100) NOT NULL,
   `district` varchar(100) NOT NULL,
   `is_active` tinyint(1) DEFAULT 1
@@ -295,7 +295,7 @@ INSERT INTO `maharashtra_cities` (`id`, `city_name`, `district`, `is_active`) VA
 --
 
 CREATE TABLE `messages` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `chat_room_id` varchar(50) NOT NULL,
   `sender_id` int(11) NOT NULL,
   `message` text NOT NULL,
@@ -327,7 +327,7 @@ INSERT INTO `messages` (`id`, `chat_room_id`, `sender_id`, `message`, `is_read`,
 --
 
 CREATE TABLE `notifications` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `type` enum('Room_Approved','Room_Rejected','Room_Expired','Broker_Approved','Expense_Due','Chat_Message','Roommate_Invite','System') NOT NULL,
   `title` varchar(200) NOT NULL,
@@ -380,14 +380,14 @@ INSERT INTO `notifications` (`id`, `user_id`, `type`, `title`, `message`, `is_re
 --
 
 CREATE TABLE `plans` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `plan_name` varchar(100) NOT NULL,
   `plan_code` varchar(50) NOT NULL,
   `plan_type` enum('Regular','Broker') DEFAULT 'Regular',
   `description` text DEFAULT NULL,
   `price` decimal(10,2) NOT NULL,
   `duration_days` int(11) NOT NULL,
-  `features` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`features`)),
+  `features` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT 1,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
@@ -413,7 +413,7 @@ INSERT INTO `plans` (`id`, `plan_name`, `plan_code`, `plan_type`, `description`,
 --
 
 CREATE TABLE `roommates` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) DEFAULT NULL COMMENT 'If registered user',
   `name` varchar(100) NOT NULL,
   `email` varchar(150) NOT NULL,
@@ -456,7 +456,7 @@ INSERT INTO `roommates` (`id`, `user_id`, `name`, `email`, `contact`, `city`, `g
 --
 
 CREATE TABLE `roommate_groups` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `group_id` varchar(10) NOT NULL COMMENT '5 alphanumeric chars',
   `group_name` varchar(100) DEFAULT NULL,
   `expense_category` varchar(20) NOT NULL DEFAULT 'Daily',
@@ -491,7 +491,7 @@ INSERT INTO `roommate_groups` (`id`, `group_id`, `group_name`, `expense_category
 --
 
 CREATE TABLE `rooms` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `room_id` varchar(20) NOT NULL COMMENT 'Auto-generated ID like R0414N',
   `user_id` int(11) NOT NULL COMMENT 'Owner who posted the room',
   `listing_type` enum('For Rent','Required Roommate','For Sell') NOT NULL,
@@ -514,11 +514,11 @@ CREATE TABLE `rooms` (
   `email` varchar(150) DEFAULT NULL,
   `preferred_gender` enum('Male','Female','Any') DEFAULT NULL COMMENT 'For Rent/Roommate',
   `furnishing_type` enum('Furnished','Semi-furnished','Unfurnished') NOT NULL,
-  `facilities` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Array of selected facilities' CHECK (json_valid(`facilities`)),
+  `facilities` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Array of selected facilities',
   `note` text DEFAULT NULL,
   `plan_type` varchar(50) NOT NULL,
   `plan_amount` decimal(10,2) DEFAULT NULL,
-  `images` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'Array of image URLs' CHECK (json_valid(`images`)),
+  `images` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'Array of image URLs',
   `status` enum('Pending','Approved','Hold','Rejected','Expired') DEFAULT 'Pending',
   `admin_remark` text DEFAULT NULL,
   `views_count` int(11) DEFAULT 0,
@@ -528,7 +528,7 @@ CREATE TABLE `rooms` (
   `expiry_date` timestamp NULL DEFAULT NULL COMMENT 'Auto-expire if no response in 72hrs',
   `is_occupied` tinyint(1) DEFAULT 0,
   `occupied_by` int(11) DEFAULT NULL,
-  `meta_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Additional metadata' CHECK (json_valid(`meta_data`)),
+  `meta_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'Additional metadata',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -552,7 +552,7 @@ INSERT INTO `rooms` (`id`, `room_id`, `user_id`, `listing_type`, `title`, `room_
 --
 
 CREATE TABLE `site_settings` (
-  `id` tinyint(4) NOT NULL,
+  `id` tinyint(4) NOT NULL AUTO_INCREMENT,
   `business_name` varchar(120) NOT NULL,
   `business_tagline` varchar(255) DEFAULT NULL,
   `support_email` varchar(160) NOT NULL,
@@ -576,7 +576,7 @@ CREATE TABLE `site_settings` (
 --
 
 INSERT INTO `site_settings` (`id`, `business_name`, `business_tagline`, `support_email`, `admin_email`, `support_phone`, `logo_url`, `favicon_url`, `support_address`, `facebook_url`, `twitter_url`, `instagram_url`, `linkedin_url`, `youtube_url`, `updated_at`, `default_ad_bg_search_url`, `default_ad_bg_post_url`) VALUES
-(1, 'RoomRental', 'Find Your Perfect Roommate', 'customer@support.com', 'customer@support.com', '+91 99999 99999', '/uploads/sites/logo-1773026130134-konwzk.png', '/uploads/sites/favicon-1773026134415-we7sli.png', 'Pune, Maharashtra', '', '', '', '', '', '2026-03-09 17:11:47', '/uploads/ads/default-bg-search.jpg', '/uploads/ads/default-bg-post.jpeg');
+(1, 'RoomRental', 'Find Your Perfect Roommate', 'customer@support.com', 'customer@support.com', '+91 99999 99999', NULL, NULL, 'Pune, Maharashtra', '', '', '', '', '', '2026-03-09 17:11:47', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -585,7 +585,7 @@ INSERT INTO `site_settings` (`id`, `business_name`, `business_tagline`, `support
 --
 
 CREATE TABLE `subscriptions` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `plan_id` int(11) NOT NULL,
   `room_id` int(11) DEFAULT NULL,
@@ -613,7 +613,7 @@ INSERT INTO `subscriptions` (`id`, `user_id`, `plan_id`, `room_id`, `amount_paid
 --
 
 CREATE TABLE `users` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `unique_id` varchar(20) NOT NULL COMMENT 'Auto-generated ID like P1144R',
   `name` varchar(100) NOT NULL,
   `email` varchar(150) NOT NULL,
@@ -879,9 +879,26 @@ ALTER TABLE `users`
   ADD KEY `idx_broker_selected_plan` (`selected_plan_id`);
 
 --
--- AUTO_INCREMENT adjustment section removed for TiDB compatibility.
--- TiDB does not support MODIFY COLUMN to set AUTO_INCREMENT in dump-style imports.
+-- AUTO_INCREMENT values — ensures next INSERT starts above the highest existing id
 --
+
+ALTER TABLE `ads` AUTO_INCREMENT = 3;
+ALTER TABLE `audit_logs` AUTO_INCREMENT = 1;
+ALTER TABLE `chat_rooms` AUTO_INCREMENT = 7;
+ALTER TABLE `contact_leads` AUTO_INCREMENT = 7;
+ALTER TABLE `existing_roommates` AUTO_INCREMENT = 2;
+ALTER TABLE `expenses` AUTO_INCREMENT = 9;
+ALTER TABLE `expense_splits` AUTO_INCREMENT = 18;
+ALTER TABLE `maharashtra_cities` AUTO_INCREMENT = 42;
+ALTER TABLE `messages` AUTO_INCREMENT = 12;
+ALTER TABLE `notifications` AUTO_INCREMENT = 49;
+ALTER TABLE `plans` AUTO_INCREMENT = 8;
+ALTER TABLE `roommates` AUTO_INCREMENT = 15;
+ALTER TABLE `roommate_groups` AUTO_INCREMENT = 5;
+ALTER TABLE `rooms` AUTO_INCREMENT = 9;
+ALTER TABLE `site_settings` AUTO_INCREMENT = 2;
+ALTER TABLE `subscriptions` AUTO_INCREMENT = 4;
+ALTER TABLE `users` AUTO_INCREMENT = 16;
 
 --
 -- Constraints for dumped tables

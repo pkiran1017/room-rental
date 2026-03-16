@@ -148,12 +148,56 @@ const executeQuery = async (sql, params = []) => {
     }
 };
 
+// Wrap a raw connection so that connection.execute() has the same
+// ER_NO_DEFAULT_FOR_FIELD INSERT fallback as executeQuery().
+const wrapConnectionWithInsertFallback = (connection) => {
+    const safeExecute = async (sql, params = []) => {
+        try {
+            return await connection.execute(sql, params);
+        } catch (error) {
+            const missingIdDefault =
+                error?.code === 'ER_NO_DEFAULT_FOR_FIELD' &&
+                error?.message?.includes("Field 'id'");
+
+            if (!missingIdDefault) throw error;
+
+            const parsed = parseInsertTarget(sql);
+            if (!parsed || parsed.columns.includes('id')) throw error;
+
+            const [[maxRow]] = await connection.execute(
+                `SELECT COALESCE(MAX(id), 0) AS maxId FROM \`${parsed.tableName}\``
+            );
+            const nextId = Number(maxRow?.maxId || 0) + 1;
+
+            const updatedCols = `(${['id', ...parsed.columns].map((c) => `\`${c}\``).join(', ')})`;
+            const rewritten = String(sql).replace(
+                /\(([^)]+)\)\s*values\s*\(/i,
+                `${updatedCols} VALUES (?, `
+            );
+            const rewrittenParams = [nextId, ...(Array.isArray(params) ? params : [])];
+
+            return await connection.execute(rewritten, rewrittenParams);
+        }
+    };
+
+    // Return a proxy that exposes safeExecute as .execute(), and forwards
+    // everything else (query, beginTransaction, commit, rollback, release) as-is.
+    return new Proxy(connection, {
+        get(target, prop) {
+            if (prop === 'execute') return safeExecute;
+            const value = target[prop];
+            return typeof value === 'function' ? value.bind(target) : value;
+        },
+    });
+};
+
 // Transaction helper
 const withTransaction = async (callback) => {
     const connection = await pool.getConnection();
     try {
         await connection.beginTransaction();
-        const result = await callback(connection);
+        const safeConnection = wrapConnectionWithInsertFallback(connection);
+        const result = await callback(safeConnection);
         await connection.commit();
         return result;
     } catch (error) {

@@ -36,6 +36,7 @@ import NotificationBell from '@/components/layouts/NotificationBell';
 import { useSiteSettings } from '@/context/SiteSettingsContext';
 import { getMediaAssetUrl } from '@/lib/utils';
 import { useRef } from 'react';
+import MapSection from '@/components/maps/MapSection';
 
 const MainLayout: React.FC = () => {
     const { isAuthenticated, user, logout } = useAuth();
@@ -46,6 +47,13 @@ const MainLayout: React.FC = () => {
     const [headerHidden, setHeaderHidden] = useState(false);
     const [logoLoadFailed, setLogoLoadFailed] = useState(false);
     const lastScrollYRef = useRef(0);
+    const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
+
+    useEffect(() => {
+        const checkViewport = () => setIsDesktop(window.innerWidth >= 1024);
+        window.addEventListener('resize', checkViewport, { passive: true });
+        return () => window.removeEventListener('resize', checkViewport);
+    }, []);
 
     const businessName = settings.businessName || 'RoomRental';
     const businessTagline = settings.businessTagline || 'Find Your Perfect Roommate';
@@ -72,7 +80,8 @@ const MainLayout: React.FC = () => {
             const nextScrollY = window.scrollY;
             const nextScrolled = nextScrollY > 20;
             const scrollingDown = nextScrollY > lastScrollYRef.current;
-            const shouldHideHeader = scrollingDown && nextScrollY > 120;
+            // On desktop (lg+) the header is always visible; only hide on mobile/tablet
+            const shouldHideHeader = !isDesktop && scrollingDown && nextScrollY > 120;
 
             setScrolled((prev) => (prev === nextScrolled ? prev : nextScrolled));
             setHeaderHidden((prev) => (prev === shouldHideHeader ? prev : shouldHideHeader));
@@ -89,7 +98,7 @@ const MainLayout: React.FC = () => {
         updateScrolledState();
         window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+    }, [isDesktop]);
 
     const handleLogout = () => {
         logout();
@@ -107,15 +116,15 @@ const MainLayout: React.FC = () => {
     const isActiveLink = (path: string) => location.pathname === path;
 
     return (
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col bg-[#F9FAFB]">
             <motion.header
                 initial={false}
                 animate={{ y: headerHidden ? -112 : 0 }}
                 transition={{ duration: 0.24, ease: 'easeOut' }}
                 className={`sticky top-0 z-50 w-full transition-all duration-300 ${
                     scrolled
-                        ? 'bg-white/95 backdrop-blur-xl shadow-lg border-b border-emerald-100'
-                        : 'bg-gradient-to-r from-green-primary via-green-secondary to-green-primary border-b border-white/20'
+                        ? 'bg-white/90 backdrop-blur-xl shadow-md border-b border-slate-200'
+                        : 'bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-sm'
                 }`}
             >
                 <div className="container mx-auto px-4 h-[68px] sm:h-20 flex items-center justify-between">
@@ -131,8 +140,8 @@ const MainLayout: React.FC = () => {
                             <div
                                 className={`w-[52px] h-[52px] sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition-all duration-300 ${
                                     scrolled
-                                        ? 'bg-gradient-to-br from-green-primary to-green-secondary shadow-lg'
-                                        : 'bg-white/20 backdrop-blur border border-white/30'
+                                        ? 'bg-gradient-to-br from-blue-600 to-purple-600 shadow-lg'
+                                        : 'bg-gradient-to-br from-blue-600 to-purple-600 shadow-md'
                                 }`}
                             >
                                 <Building2 className="w-6 h-6 text-white" />
@@ -142,13 +151,13 @@ const MainLayout: React.FC = () => {
                             <span
                                 className={`text-base sm:text-2xl font-extrabold tracking-tight leading-tight ${
                                     scrolled
-                                        ? 'bg-gradient-to-r from-green-primary to-green-secondary bg-clip-text text-transparent'
-                                        : 'text-white'
+                                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'
+                                        : 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'
                                 }`}
                             >
                                 {businessName}
                             </span>
-                            <span className={`text-[9px] sm:text-[10px] font-medium -mt-0.5 max-w-[170px] sm:max-w-none truncate ${scrolled ? 'text-emerald-700/80' : 'text-white/80'}`}>
+                            <span className={`text-[9px] sm:text-[10px] font-medium -mt-0.5 max-w-[170px] sm:max-w-none truncate ${scrolled ? 'text-slate-500' : 'text-slate-500'}`}>
                                 {businessTagline}
                             </span>
                         </div>
@@ -166,11 +175,11 @@ const MainLayout: React.FC = () => {
                                     className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
                                         scrolled
                                             ? active
-                                                ? 'bg-green-primary text-white shadow-md'
-                                                : 'text-gray-700 hover:bg-emerald-50 hover:text-emerald-700'
+                                                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
+                                                : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                                             : active
-                                              ? 'bg-white text-green-700 shadow-lg'
-                                              : 'text-white/95 hover:bg-white/20 hover:text-white'
+                                              ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md'
+                                              : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                                     }`}
                                 >
                                     <Icon className="w-4 h-4" />
@@ -186,10 +195,10 @@ const MainLayout: React.FC = () => {
                                 <NotificationBell
                                     className={`transition-all duration-300 ${
                                         scrolled
-                                            ? 'hover:bg-emerald-50 text-gray-700 border border-emerald-200'
-                                            : 'hover:bg-white/20 text-white border border-white/20'
+                                            ? 'hover:bg-slate-100 text-slate-700 border border-slate-200'
+                                            : 'hover:bg-slate-100 text-slate-700 border border-slate-200'
                                     }`}
-                                    iconClassName={scrolled ? 'text-gray-700' : 'text-white'}
+                                    iconClassName={'text-slate-700'}
                                     defaultNavigatePath="/dashboard"
                                 />
 
@@ -199,22 +208,22 @@ const MainLayout: React.FC = () => {
                                             variant="ghost"
                                             className={`hidden sm:inline-flex gap-3 rounded-xl px-3 h-11 transition-all duration-300 ${
                                                 scrolled
-                                                    ? 'hover:bg-emerald-50 border border-emerald-200'
-                                                    : 'hover:bg-white/20 border border-white/25'
+                                                    ? 'hover:bg-slate-100 border border-slate-200'
+                                                    : 'hover:bg-slate-100 border border-slate-200'
                                             }`}
                                         >
-                                            <div className="w-9 h-9 bg-gradient-to-br from-green-primary to-green-secondary rounded-xl flex items-center justify-center shadow-lg">
+                                            <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
                                                 <User className="w-5 h-5 text-white" />
                                             </div>
                                             <div className="hidden sm:flex flex-col items-start">
-                                                <span className={`text-sm font-semibold leading-tight ${scrolled ? 'text-gray-900' : 'text-white'}`}>
+                                                <span className={`text-sm font-semibold leading-tight ${scrolled ? 'text-gray-900' : 'text-gray-900'}`}>
                                                     {user?.name}
                                                 </span>
-                                                <span className={`text-xs leading-tight ${scrolled ? 'text-gray-500' : 'text-white/75'}`}>
+                                                <span className={`text-xs leading-tight ${scrolled ? 'text-gray-500' : 'text-gray-500'}`}>
                                                     {user?.role}
                                                 </span>
                                             </div>
-                                            <ChevronDown className={`h-4 w-4 ${scrolled ? 'text-gray-500' : 'text-white/75'}`} />
+                                            <ChevronDown className={`h-4 w-4 ${scrolled ? 'text-gray-500' : 'text-gray-500'}`} />
                                         </Button>
                                     </DropdownMenuTrigger>
 
@@ -251,8 +260,8 @@ const MainLayout: React.FC = () => {
                                     onClick={() => navigate('/login')}
                                     className={`rounded-xl font-semibold ${
                                         scrolled
-                                            ? 'text-gray-700 hover:bg-emerald-50 hover:text-emerald-700'
-                                            : 'text-white hover:bg-white/20'
+                                            ? 'text-gray-700 hover:bg-slate-100 hover:text-gray-900'
+                                            : 'text-gray-700 hover:bg-slate-100 hover:text-gray-900'
                                     }`}
                                 >
                                     Login
@@ -261,8 +270,8 @@ const MainLayout: React.FC = () => {
                                     onClick={() => navigate('/register')}
                                     className={`rounded-xl font-semibold shadow-lg transition-all duration-300 hover:scale-105 ${
                                         scrolled
-                                            ? 'bg-gradient-to-r from-green-primary to-green-secondary hover:from-green-secondary hover:to-green-primary text-white'
-                                            : 'bg-white text-green-700 hover:bg-white/95'
+                                            ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:brightness-110'
+                                            : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:brightness-110'
                                     }`}
                                 >
                                     <Sparkles className="w-4 h-4 mr-2" />
@@ -275,8 +284,8 @@ const MainLayout: React.FC = () => {
                             <SheetTrigger
                                 className={`lg:hidden rounded-xl p-2 transition-all duration-300 ${
                                     scrolled
-                                        ? 'hover:bg-emerald-50 text-gray-700'
-                                        : 'hover:bg-white/20 text-white'
+                                        ? 'hover:bg-slate-100 text-gray-700'
+                                        : 'hover:bg-slate-100 text-gray-700'
                                 }`}
                                 aria-label="Open menu"
                             >
@@ -414,6 +423,8 @@ const MainLayout: React.FC = () => {
             <main className="flex-1">
                 <Outlet />
             </main>
+
+            <MapSection />
 
             <footer className="bg-gradient-to-br from-slate-900 via-slate-800 to-green-900 text-white">
                 <div className="container mx-auto px-4 py-16">

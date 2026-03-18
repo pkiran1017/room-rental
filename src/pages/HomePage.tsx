@@ -40,7 +40,6 @@ import { getRooms, getActiveAds, getRoomById, type PublicAd } from '@/services/r
 import { useChat } from '@/context/ChatContext';
 import { useAuth } from '@/context/AuthContext';
 import RoomCard from '@/components/rooms/RoomCard';
-// Removed default ad card image logic
 
 const HOME_CACHE_KEY = 'home-page-cache-v1';
 const HOME_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
@@ -203,11 +202,12 @@ const HomePage: React.FC = () => {
         void fetchData();
     }, []);
 
+    // Auto-scroll to search bar only on mobile (not needed on desktop where it's already visible)
     useEffect(() => {
+        if (window.innerWidth >= 1024) return;
         const timer = window.setTimeout(() => {
             searchCardRef.current?.scrollIntoView({ block: 'start', behavior: 'auto' });
         }, 0);
-
         return () => window.clearTimeout(timer);
     }, []);
 
@@ -949,7 +949,7 @@ const HomePage: React.FC = () => {
                                             Refine Your Search
                                         </h3>
                                         
-                                        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+                                        <div className="grid gap-6 lg:gap-8 md:grid-cols-2 lg:grid-cols-4">
                                             {/* Price Range */}
                                             <div className="space-y-2">
                                                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
@@ -1280,6 +1280,7 @@ const HomePage: React.FC = () => {
                 </div>
             </section>
 
+            {/* CTA Section */}
             {/* CTA Section */}
             <section className="py-24 bg-gradient-to-r from-green-primary via-green-secondary to-green-primary text-white relative overflow-hidden deferred-render-section">
                 {/* Animated Background */}

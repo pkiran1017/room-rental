@@ -20,6 +20,7 @@ const resolveMediaUrl = (url?: string): string => {
     const decodedUrl = decodeHtmlEntities(url).trim();
     if (!decodedUrl) return '';
     if (/^https?:\/\//i.test(decodedUrl)) return decodedUrl;
+    if (decodedUrl.startsWith('/') && !decodedUrl.startsWith('/uploads/')) return decodedUrl;
     if (decodedUrl.startsWith('/')) return `${API_ORIGIN}${decodedUrl}`;
     return `${API_ORIGIN}/${decodedUrl}`;
 };
@@ -66,7 +67,7 @@ export const defaultSiteSettings: SiteSettings = {
     youtubeUrl: ''
 };
 
-const SITE_SETTINGS_CACHE_KEY = 'site-settings-cache-v1';
+const SITE_SETTINGS_CACHE_KEY = 'site-settings-cache-v2';
 let inMemorySiteSettingsCache: SiteSettings | null = null;
 
 const canUseStorage = (storage: Storage): boolean => {

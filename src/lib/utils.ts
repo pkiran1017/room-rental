@@ -65,6 +65,9 @@ export function getMediaAssetUrl(assetUrl: string | null | undefined): string {
   if (!decoded) return '';
   if (/^https?:\/\//i.test(decoded)) return decoded;
 
+  // Keep non-upload absolute paths as frontend-local public assets (e.g. /favicon.png).
+  if (decoded.startsWith('/') && !decoded.startsWith('/uploads/')) return decoded;
+
   const apiOrigin = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '');
   const cleanPath = decoded.startsWith('/') ? decoded : `/${decoded}`;
   return `${apiOrigin}${cleanPath}`;

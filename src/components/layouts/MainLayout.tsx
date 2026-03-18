@@ -41,10 +41,12 @@ const MainLayout: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [scrolled, setScrolled] = useState(false);
+    const [logoLoadFailed, setLogoLoadFailed] = useState(false);
 
     const businessName = settings.businessName || 'RoomRental';
     const businessTagline = settings.businessTagline || 'Find Your Perfect Roommate';
     const logoUrl = getMediaAssetUrl(settings.logoUrl);
+    const shouldShowLogo = Boolean(logoUrl) && !logoLoadFailed;
     const supportEmail = settings.supportEmail || 'customer@support.com';
     const supportPhone = settings.supportPhone || '+91 99999 99999';
     const supportAddress = settings.supportAddress || 'Pune, Maharashtra';
@@ -54,6 +56,10 @@ const MainLayout: React.FC = () => {
     const linkedinUrl = settings.linkedinUrl || '#';
     const youtubeUrl = settings.youtubeUrl || '#';
     const supportPhoneHref = `tel:${supportPhone.replace(/\s+/g, '')}`;
+
+    useEffect(() => {
+        setLogoLoadFailed(false);
+    }, [logoUrl]);
 
     useEffect(() => {
         let ticking = false;
@@ -101,11 +107,12 @@ const MainLayout: React.FC = () => {
             >
                 <div className="container mx-auto px-4 h-[68px] sm:h-20 flex items-center justify-between">
                     <Link to="/" className="flex items-center gap-3 group">
-                        {logoUrl ? (
+                        {shouldShowLogo ? (
                             <img
                                 src={logoUrl}
                                 alt={businessName}
                                 className="w-[52px] h-[52px] sm:w-12 sm:h-12 object-cover rounded-2xl transition-all duration-300 group-hover:scale-105"
+                                onError={() => setLogoLoadFailed(true)}
                             />
                         ) : (
                             <div
@@ -267,11 +274,12 @@ const MainLayout: React.FC = () => {
                                 <div className="h-16 flex items-center px-6 border-b bg-gradient-to-r from-green-primary to-green-secondary">
                                     <SheetClose asChild>
                                         <Link to="/" className="flex items-center gap-3">
-                                            {logoUrl ? (
+                                            {shouldShowLogo ? (
                                                 <img
                                                     src={logoUrl}
                                                     alt={businessName}
                                                     className="w-11 h-11 object-cover rounded-2xl ring-2 ring-white/30"
+                                                    onError={() => setLogoLoadFailed(true)}
                                                 />
                                             ) : (
                                                 <div className="w-11 h-11 bg-white/20 rounded-2xl flex items-center justify-center ring-2 ring-white/30">
@@ -399,11 +407,12 @@ const MainLayout: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
                         <div className="space-y-4">
                             <div className="flex items-center gap-3">
-                                {logoUrl ? (
+                                {shouldShowLogo ? (
                                     <img
                                         src={logoUrl}
                                         alt={businessName}
                                         className="w-12 h-12 object-cover rounded-xl shadow-lg"
+                                        onError={() => setLogoLoadFailed(true)}
                                     />
                                 ) : (
                                     <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center shadow-lg">

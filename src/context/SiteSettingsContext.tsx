@@ -7,6 +7,7 @@ import {
     getPublicSiteSettings,
     type SiteSettings
 } from '@/services/siteSettingsService';
+import { getMediaAssetUrl } from '@/lib/utils';
 
 interface SiteSettingsContextValue {
     settings: SiteSettings;
@@ -71,6 +72,7 @@ export const SiteSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     // Update favicon dynamically
     useEffect(() => {
         if (!settings.faviconUrl) return;
+        const resolvedFaviconUrl = getMediaAssetUrl(settings.faviconUrl) || settings.faviconUrl;
 
         let favicon = document.querySelector("link[rel='icon']") as HTMLLinkElement | null;
         if (!favicon) {
@@ -78,7 +80,7 @@ export const SiteSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
             favicon.rel = 'icon';
             document.head.appendChild(favicon);
         }
-        favicon.href = settings.faviconUrl;
+        favicon.href = resolvedFaviconUrl;
 
         // Also update apple-touch-icon
         let appleTouchIcon = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement | null;
@@ -87,7 +89,7 @@ export const SiteSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ 
             appleTouchIcon.rel = 'apple-touch-icon';
             document.head.appendChild(appleTouchIcon);
         }
-        appleTouchIcon.href = settings.faviconUrl;
+        appleTouchIcon.href = resolvedFaviconUrl;
     }, [settings.faviconUrl]);
 
     const value = useMemo(

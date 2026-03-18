@@ -16,6 +16,7 @@ import {
     Mail,
     MessageSquare,
     MessageCircle,
+    Loader2,
     Share2,
     Heart,
     ChevronLeft,
@@ -92,6 +93,7 @@ const RoomDetailPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedImage, setSelectedImage] = useState(0);
     const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
+    const [isEstablishingChat, setIsEstablishingChat] = useState(false);
     const { openChat, isLoading: chatLoading } = useChat();
 
     const isOwner = user && room && user.id === room.user_id;
@@ -107,8 +109,11 @@ const RoomDetailPage: React.FC = () => {
         }
 
         try {
+            setIsEstablishingChat(true);
             await openChat(room.id, room.user_id, room);
         } catch (error) {
+        } finally {
+            setIsEstablishingChat(false);
         }
     };
 
@@ -509,10 +514,14 @@ const RoomDetailPage: React.FC = () => {
                                         <Button 
                                             className="w-full bg-blue-600 hover:bg-blue-700 text-white" 
                                             onClick={handleChatClick}
-                                            disabled={chatLoading}
+                                            disabled={chatLoading || isEstablishingChat}
                                         >
-                                            <MessageSquare className="w-4 h-4 mr-2" />
-                                            {chatLoading ? 'Starting Chat...' : 'Chat with Owner'}
+                                            {isEstablishingChat || chatLoading ? (
+                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            ) : (
+                                                <MessageSquare className="w-4 h-4 mr-2" />
+                                            )}
+                                            {isEstablishingChat || chatLoading ? 'Establishing chat with owner...' : 'Chat with Owner'}
                                         </Button>
                                     )}
                                     {room.contact_visibility === 'Public' && room.contact && (

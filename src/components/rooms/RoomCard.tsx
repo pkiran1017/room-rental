@@ -11,6 +11,7 @@ import {
     MessageSquare,
     MessageCircle,
     Image as ImageIcon,
+    Loader2,
     Phone
 } from 'lucide-react';
 import type { Room } from '@/types';
@@ -18,7 +19,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 interface RoomCardProps {
     room: Room;
-    onChat?: (roomId: string) => void;
+    onChat?: (roomId: string) => Promise<void> | void;
     showViews?: boolean;
     viewMode?: 'grid' | 'list';
 }
@@ -53,6 +54,7 @@ const RoomCard: React.FC<RoomCardProps> = ({
     const [isDocumentVisible, setIsDocumentVisible] = useState(() => document.visibilityState !== 'hidden');
     const isMobile = useIsMobile();
     const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+    const [isChatStarting, setIsChatStarting] = useState(false);
 
     useEffect(() => {
         const container = imageContainerRef.current;
@@ -133,6 +135,28 @@ const RoomCard: React.FC<RoomCardProps> = ({
 
     const mainFacilities = useMemo(() => facilitiesArray.slice(0, 3), [facilitiesArray]);
     const moreFacilities = facilitiesArray.length > 3 ? facilitiesArray.length - 3 : 0;
+
+    const handleChatButtonClick = async () => {
+        if (isChatStarting) {
+            return;
+        }
+
+        if (!isAuthenticated) {
+            navigate('/login');
+            return;
+        }
+
+        if (!onChat) {
+            return;
+        }
+
+        try {
+            setIsChatStarting(true);
+            await onChat(room.room_id);
+        } finally {
+            setIsChatStarting(false);
+        }
+    };
 
     return (
         <Card className={`group w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:shadow-md p-0 gap-0 ${viewMode === 'list' ? 'max-w-none flex flex-col md:flex-row' : 'sm:min-w-[312px] sm:max-w-[360px] flex flex-col'}`}>
@@ -264,17 +288,14 @@ const RoomCard: React.FC<RoomCardProps> = ({
                         <Button
                             size="sm"
                             onClick={() => {
-                                if (!isAuthenticated) {
-                                    navigate('/login');
-                                } else if (onChat) {
-                                    onChat(room.room_id);
-                                }
+                                void handleChatButtonClick();
                             }}
-                            title="Chat with owner"
+                            title={isChatStarting ? 'Establishing chat with owner...' : 'Chat with owner'}
+                            disabled={isChatStarting}
                             className={`rounded-md text-xs h-7 bg-blue-600 hover:bg-blue-700 text-white ${viewMode === 'list' ? 'flex-1 md:w-full md:flex-none' : 'flex-1'}`}
                         >
-                            <MessageSquare size={14} />
-                            <span className="ml-1">Chat</span>
+                            {isChatStarting ? <Loader2 size={14} className="animate-spin" /> : <MessageSquare size={14} />}
+                            <span className="ml-1">{isChatStarting ? 'Establishing...' : 'Chat'}</span>
                         </Button>
 
                         {/* WhatsApp Button - Only show when contact_visibility is 'Public' */}

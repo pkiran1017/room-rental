@@ -102,7 +102,7 @@ const FloatingChatButton: React.FC = () => {
             {showDropdown && (
                 <div className="bg-white border border-gray-200 rounded-lg shadow-xl w-72 max-h-96 overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-200">
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3 flex items-center justify-between flex-shrink-0">
+                    <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3 flex items-center justify-between flex-shrink-0">
                         <h3 className="text-white font-semibold flex items-center gap-2">
                             <MessageCircle size={18} />
                             Messages
@@ -120,7 +120,7 @@ const FloatingChatButton: React.FC = () => {
                     <div className="overflow-y-auto flex-1 divide-y">
                         {loading ? (
                             <div className="p-8 text-center text-gray-400">
-                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto" />
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto" />
                             </div>
                         ) : chatRooms.length === 0 ? (
                             <div className="p-4 text-center text-sm text-gray-400">
@@ -162,7 +162,7 @@ const FloatingChatButton: React.FC = () => {
                                                         className="w-12 h-12 rounded-full object-cover border border-gray-200"
                                                     />
                                                 ) : (
-                                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold text-sm">
+                                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
                                                         {userName.charAt(0)?.toUpperCase() || 'U'}
                                                     </div>
                                                 )}
@@ -173,7 +173,7 @@ const FloatingChatButton: React.FC = () => {
                                                 <p className="font-semibold text-sm text-gray-900 truncate">
                                                     {userName}
                                                 </p>
-                                                <p className={`text-xs truncate ${unreadCount > 0 ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}>
+                                                <p className={`text-xs truncate ${unreadCount > 0 ? 'text-purple-600 font-semibold' : 'text-gray-500'}`}>
                                                     {roomTitle}
                                                 </p>
                                             </div>
@@ -215,7 +215,7 @@ const FloatingChatButton: React.FC = () => {
             {/* Main Button */}
             <button
                 onClick={() => setShowDropdown(!showDropdown)}
-                className="relative bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all transform hover:scale-110 active:scale-95"
+                className="relative bg-gradient-to-r from-blue-600 to-purple-600 hover:brightness-110 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all transform hover:scale-110 active:scale-95"
                 aria-label="Open chat"
                 title="Chat"
             >

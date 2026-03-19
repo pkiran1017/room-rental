@@ -2,7 +2,7 @@ import React, { useRef, useCallback, useLayoutEffect, useState, useEffect } from
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { X, Eye, EyeOff } from 'lucide-react';
+import { X, Eye, EyeOff, Loader2, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRealtimeChat } from '@/hooks/useRealtimeChat';
 import { sendMessage, getRoomContactInfo, updateRoomContactVisibility } from '@/services/chatService';
@@ -18,9 +18,10 @@ interface ChatModalProps {
     chatRoom: ChatRoom | null;
     room?: Room | null;
     onNavigateToRoom?: (roomId: number | string) => void;
+    isEstablishing?: boolean;
 }
 
-const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose, chatRoom, room, onNavigateToRoom }) => {
+const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose, chatRoom, room, onNavigateToRoom, isEstablishing }) => {
     const { user } = useAuth();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     
@@ -191,7 +192,28 @@ const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose, chatRoom, room, 
         }
     };
 
-    if (!chatRoom) return null;
+    if (!chatRoom) {
+        // Show a connecting-state dialog while the room is being fetched
+        if (!isOpen && !isEstablishing) return null;
+        return (
+            <Dialog open={isOpen} onOpenChange={onClose}>
+                <DialogContent className="max-w-sm w-full p-0 gap-0 flex flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden" showCloseButton={false}>
+                    <DialogTitle className="sr-only">Connecting chat</DialogTitle>
+                    <DialogDescription className="sr-only">Establishing chat connection with owner</DialogDescription>
+                    <div className="flex flex-col items-center gap-4 py-10 px-8">
+                        <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+                            <MessageSquare className="w-8 h-8 text-white" />
+                        </div>
+                        <div className="text-center">
+                            <p className="font-semibold text-gray-900 text-base">Establishing chat...</p>
+                            <p className="text-sm text-gray-500 mt-1">Connecting you with the owner</p>
+                        </div>
+                        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                    </div>
+                </DialogContent>
+            </Dialog>
+        );
+    }
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>

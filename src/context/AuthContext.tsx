@@ -52,6 +52,47 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         initAuth();
     }, []);
 
+    // ── Cross-tab auth sync ────────────────────────────────────────────────
+    // When another browser tab logs out or logs in as a different user,
+    // the 'storage' event fires here so every open tab stays in sync.
+    useEffect(() => {
+        const handleStorageChange = async (event: StorageEvent) => {
+            if (event.key !== 'token') return;
+
+            if (!event.newValue) {
+                // Token was removed in another tab → force-logout this tab
+                setState({
+                    user: null,
+                    token: null,
+                    isAuthenticated: false,
+                    isLoading: false
+                });
+            } else {
+                // A new/different token was set in another tab → re-validate
+                try {
+                    const user = await authService.getCurrentUser();
+                    setState({
+                        user,
+                        token: event.newValue,
+                        isAuthenticated: true,
+                        isLoading: false
+                    });
+                } catch {
+                    localStorage.removeItem('token');
+                    setState({
+                        user: null,
+                        token: null,
+                        isAuthenticated: false,
+                        isLoading: false
+                    });
+                }
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
+    }, []);
+
     const login = async (data: LoginFormData) => {
         const response = await authService.login(data);
         localStorage.setItem('token', response.token);

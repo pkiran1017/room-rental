@@ -34,6 +34,9 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [isLoading, setIsLoading] = useState(false);
     const isOpenRef = useRef(false);
     const activeChatRoomRef = useRef<string | null>(null);
+    // Cache previously fetched/created chat rooms keyed by "roomListingId:receiverId"
+    // so repeat opens are instant (no extra API round-trip).
+    const chatRoomCacheRef = useRef<Map<string, ChatRoom>>(new Map());
 
     // Pre-warm lazy chunks as soon as user is authenticated
     useEffect(() => {
@@ -88,16 +91,31 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const openChat = async (roomListingId: number, receiverId: number, roomData?: Room) => {
+        const cacheKey = `${roomListingId}:${receiverId}`;
+        const cached = chatRoomCacheRef.current.get(cacheKey);
+
+        if (cached) {
+            // Instant open from cache — no API call, no loading state
+            setChatRoom(cached);
+            activeChatRoomRef.current = cached.room_id ?? null;
+            if (roomData) setRoom(roomData);
+            setIsOpen(true);
+            return;
+        }
+
         try {
             setIsLoading(true);
+            // Open the modal immediately so users see it right away
+            if (roomData) setRoom(roomData);
+            setIsOpen(true);
             const chatRoomData = await getOrCreateChatRoom(roomListingId, receiverId);
+            // Store in cache for future opens
+            chatRoomCacheRef.current.set(cacheKey, chatRoomData);
             setChatRoom(chatRoomData);
             activeChatRoomRef.current = chatRoomData.room_id ?? null;
-            if (roomData) {
-                setRoom(roomData);
-            }
-            setIsOpen(true);
         } catch (error) {
+            setIsOpen(false);
+            setChatRoom(null);
             throw error;
         } finally {
             setIsLoading(false);
@@ -274,6 +292,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     onClose={closeChat}
                     chatRoom={chatRoom}
                     room={room}
+                    isEstablishing={isLoading}
                 />
                 {popupData && (
                     <MessagePopup

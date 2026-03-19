@@ -138,7 +138,7 @@ const DashboardPage: React.FC = () => {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
                 {statCards.map((stat, index) => (
                     <Card key={index} className="cursor-pointer hover:shadow-md transition-shadow"
                           onClick={() => navigate(stat.link)}>
@@ -269,7 +269,7 @@ const DashboardPage: React.FC = () => {
                     <CardTitle>Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         <Button variant="outline" className="h-auto py-6 flex flex-col items-center gap-2"
                                 onClick={() => navigate('/dashboard/rooms/post')}>
                             <Plus className="w-6 h-6" />

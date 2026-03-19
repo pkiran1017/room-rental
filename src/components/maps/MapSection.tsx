@@ -571,24 +571,34 @@ const MapSection: React.FC = () => {
                     <div ref={mapContainerRef} className="w-full h-full" />
 
                     {/* Legend overlay */}
-                    <div className="absolute bottom-6 left-4 z-[400] bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-3.5 border border-slate-200 min-w-[155px]">
-                        <p className="text-[10px] font-extrabold text-slate-500 mb-2.5 uppercase tracking-widest">
-                            Legend
-                        </p>
+                    <div className="absolute bottom-6 left-4 z-[400] bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-3.5 border border-slate-200 min-w-[220px]">
+                        <div className="flex items-center justify-between mb-2.5">
+                            <p className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">
+                                Legend
+                            </p>
+                            <span className="text-[10px] font-semibold text-slate-400">Listing Type</span>
+                        </div>
                         {Object.keys(PIN_CONFIGS).map((type) => (
-                            <div key={type} className="flex items-center gap-2 mb-2 last:mb-0">
-                                <div
-                                    className={`w-3 h-3 rounded-full flex-shrink-0 shadow-sm ${
-                                        LEGEND_DOT_CLASS[type as 'For Rent' | 'Required Roommate' | 'For Sell']
-                                    }`}
-                                />
-                                <span className="text-xs font-medium text-slate-700">{type}</span>
+                            <div key={type} className="flex items-center justify-between gap-3 mb-2 last:mb-0">
+                                <div className="flex items-center gap-2">
+                                    <div
+                                        className={`w-3 h-3 rounded-full flex-shrink-0 shadow-sm ${
+                                            LEGEND_DOT_CLASS[type as 'For Rent' | 'Required Roommate' | 'For Sell']
+                                        }`}
+                                    />
+                                    <span className="text-xs font-medium text-slate-700">{type}</span>
+                                </div>
+                                <span className="text-[10px] text-slate-500">Room Pin</span>
                             </div>
                         ))}
-                        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100">
-                            <div className="w-3 h-3 rounded-full flex-shrink-0 bg-blue-500 shadow-sm ring-2 ring-blue-300" />
-                            <span className="text-xs font-medium text-slate-700">Your Location</span>
+                        <div className="flex items-center justify-between gap-3 mt-2 pt-2 border-t border-slate-100">
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full flex-shrink-0 bg-blue-500 shadow-sm ring-2 ring-blue-300" />
+                                <span className="text-xs font-medium text-slate-700">Your Location</span>
+                            </div>
+                            <span className="text-[10px] text-slate-500">GPS</span>
                         </div>
+                        <p className="mt-2 text-[10px] text-slate-500">Hover a pin to preview, click to open details.</p>
                     </div>
 
                     {/* "20km" radius badge */}

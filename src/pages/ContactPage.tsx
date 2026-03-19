@@ -98,8 +98,8 @@ const ContactPage: React.FC = () => {
     };
 
     return (
-        <div className="container mx-auto px-4 py-12">
-            <div className="text-center mb-12">
+        <div className="container mx-auto px-4 py-0 md:py-4">
+            <div className="text-center mb-6">
                 <h1 className="text-3xl font-bold mb-4">Contact Us</h1>
                 <p className="text-muted-foreground max-w-2xl mx-auto">
                     Have questions or need help? We're here for you. Reach out to our team.

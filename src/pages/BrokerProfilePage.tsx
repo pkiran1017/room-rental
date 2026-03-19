@@ -87,7 +87,7 @@ const BrokerProfilePage: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-b from-green-bg via-white to-green-bg pt-[30px] pb-10 md:pt-[30px] md:pb-14">
+            <div className="min-h-screen bg-gradient-to-b from-green-bg via-white to-green-bg pt-0 pb-10 md:pt-0 md:pb-14\">
                 <div className="max-w-screen-xl mx-auto px-3 md:px-[20px] space-y-6 md:space-y-8">
                     <Skeleton className="h-12 w-48" />
                     <Card>

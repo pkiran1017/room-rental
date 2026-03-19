@@ -55,11 +55,11 @@ const AuthBusinessLayout: React.FC = () => {
                             <img
                                 src={logoUrl}
                                 alt={businessName}
-                                className="h-9 w-9 rounded-lg object-cover"
+                                className="h-9 w-9 rounded-md object-cover"
                                 onError={() => setLogoLoadFailed(true)}
                             />
                         ) : (
-                            <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-green-primary to-green-secondary flex items-center justify-center">
+                                <div className="h-9 w-9 rounded-md bg-gradient-to-br from-green-primary to-green-secondary flex items-center justify-center">
                                 <Building2 className="h-5 w-5 text-white" />
                             </div>
                         )}
@@ -100,11 +100,11 @@ const AuthBusinessLayout: React.FC = () => {
                                 <img
                                     src={logoUrl}
                                     alt={businessName}
-                                    className="h-12 w-12 rounded-xl object-cover ring-2 ring-white/30"
+                                    className="h-12 w-12 rounded-md object-cover ring-2 ring-white/30"
                                     onError={() => setLogoLoadFailed(true)}
                                 />
                             ) : (
-                                <div className="h-12 w-12 rounded-xl bg-white/15 ring-2 ring-white/30 flex items-center justify-center">
+                                <div className="h-12 w-12 rounded-md bg-white/15 ring-2 ring-white/30 flex items-center justify-center">
                                     <Building2 className="h-7 w-7 text-white" />
                                 </div>
                             )}
@@ -147,11 +147,11 @@ const AuthBusinessLayout: React.FC = () => {
                                     <img
                                         src={logoUrl}
                                         alt={businessName}
-                                        className="h-10 w-10 rounded-lg object-cover"
+                                        className="h-10 w-10 rounded-md object-cover"
                                         onError={() => setLogoLoadFailed(true)}
                                     />
                                 ) : (
-                                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-green-primary to-green-secondary flex items-center justify-center">
+                                    <div className="h-10 w-10 rounded-md bg-gradient-to-br from-green-primary to-green-secondary flex items-center justify-center">
                                         <Building2 className="h-5 w-5 text-white" />
                                     </div>
                                 )}

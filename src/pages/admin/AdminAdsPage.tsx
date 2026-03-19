@@ -332,7 +332,7 @@ const AdminAdsPage: React.FC = () => {
     return (
         <div className="space-y-6 p-3 sm:p-6 bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 min-h-screen">
             {/* Default Ad Card Background Upload Cards (Separate for Search and Post Room) */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
                 {/* Search Card Default BG */}
                 <Card>
                     <CardHeader>
@@ -437,7 +437,7 @@ const AdminAdsPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <Card className="border-t-4 border-t-blue-500 shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Ads</CardTitle>
@@ -482,7 +482,7 @@ const AdminAdsPage: React.FC = () => {
                     <CardDescription>Higher priority ads are shown first in homepage slider</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid gap-4 lg:hidden">
+                    <div className="grid gap-6 lg:hidden">
                         {loading ? (
                             <Card className="border border-dashed shadow-none">
                                 <CardContent className="p-6 text-center text-sm text-muted-foreground">Loading ads...</CardContent>
@@ -676,7 +676,7 @@ const AdminAdsPage: React.FC = () => {
                             />
                         </div>
 
-                        <div className="grid gap-4 md:grid-cols-2">
+                        <div className="grid gap-6 md:grid-cols-2">
                             <div className="space-y-2">
                                 <Label htmlFor="priority">Priority</Label>
                                 <Input
@@ -779,7 +779,7 @@ const AdminAdsPage: React.FC = () => {
                             )}
                         </div>
 
-                        <div className="grid gap-4 md:grid-cols-2">
+                        <div className="grid gap-6 md:grid-cols-2">
                             <div className="space-y-2">
                                 <Label htmlFor="start_date">Start Date</Label>
                                 <Input

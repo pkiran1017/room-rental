@@ -284,7 +284,7 @@ const BrokerDashboardPage: React.FC = () => {
 
             {/* Main Key Information Cards */}
             {!isPlansPage && (
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* My Rooms Posted */}
                 <Card className="border shadow-md hover:shadow-lg transition-shadow cursor-pointer hover:border-primary" onClick={() => { setActiveTab('rooms'); }}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -451,13 +451,13 @@ const BrokerDashboardPage: React.FC = () => {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="pt-6">
-                            <div className="grid gap-4 md:grid-cols-3 text-center">
+                            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 text-center">
                                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
                                     <p className="text-2xl font-bold text-slate-900">{stats?.totalRoomsPosted || 0}</p>
                                     <p className="text-xs text-slate-600 mt-1 font-medium">Total Posted</p>
                                 </div>
-                                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                                    <p className="text-2xl font-bold text-green-600">{stats?.activeRooms || 0}</p>
+                                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                    <p className="text-2xl font-bold text-blue-600">{stats?.activeRooms || 0}</p>
                                     <p className="text-xs text-slate-600 mt-1 font-medium">Active</p>
                                 </div>
                                 <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
@@ -884,14 +884,14 @@ const BrokerDashboardPage: React.FC = () => {
                                 </div>
                             </CardHeader>
                             <CardContent className="pt-6">
-                                <div className="grid grid-cols-2 gap-3 md:grid-cols-2 lg:grid-cols-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                                     <div>
                                         <p className="text-sm text-slate-600 font-medium">Plan Name</p>
                                         <p className="text-lg font-bold text-slate-900 mt-1">{currentSub.plan?.plan_name}</p>
                                     </div>
                                     <div>
                                         <p className="text-sm text-slate-600 font-medium">Amount Paid</p>
-                                        <p className="text-lg font-bold text-green-600 mt-1">₹{currentSub.amount_paid}</p>
+                                        <p className="text-lg font-bold text-blue-600 mt-1">₹{currentSub.amount_paid}</p>
                                     </div>
                                     <div>
                                         <p className="text-sm text-slate-600 font-medium">Start Date</p>

@@ -84,8 +84,8 @@ const BrokersPage: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-green-bg via-white to-slate-100 py-10 md:py-14">
-            <div className="max-w-screen-2xl mx-auto px-[20px] space-y-8">
+        <div className="min-h-screen bg-gradient-to-b from-green-bg via-white to-slate-100 py-0 md:py-6">
+            <div className="max-w-screen-2xl mx-auto px-4 space-y-6">
                 <div className="text-center space-y-3">
                     <Badge className="px-3 py-1.5 bg-blue-50 text-blue-700 border-blue-200 font-semibold">
                         <BriefcaseBusiness className="w-3.5 h-3.5 mr-1.5 inline" />

@@ -5,13 +5,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Green + White Theme Colors
-        'green-primary': '#16A34A',
-        'green-secondary': '#22C55E',
-        'green-accent': '#F59E0B',
-        'green-bg': '#F0FDF4',
+        // Retained token names for compatibility, remapped to the blue/purple theme
+        'green-primary': '#2563EB',
+        'green-secondary': '#7C3AED',
+        'green-accent': '#A855F7',
+        'green-bg': '#F9FAFB',
         'green-text': '#1F2937',
-        'green-border': '#E5E7EB',
+        'green-border': '#CBD5E1',
         // Design System Colors
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

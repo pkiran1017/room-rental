@@ -81,6 +81,9 @@
     overflow-x: clip;
     -webkit-tap-highlight-color: transparent;
   }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
   button,
   a {
     touch-action: manipulation;
@@ -109,3 +112,35 @@
     contain-intrinsic-size: 1200px;
   }
 }
+
+  /* ── Leaflet map section overrides ── */
+  .map-room-popup .leaflet-popup-content-wrapper {
+    padding: 0 !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18) !important;
+    border: none !important;
+  }
+  .map-room-popup .leaflet-popup-content {
+    margin: 0 !important;
+    line-height: 1 !important;
+  }
+  .map-room-popup .leaflet-popup-tip-container {
+    display: none !important;
+  }
+  .map-room-popup .leaflet-popup-close-button {
+    top: 6px !important;
+    right: 8px !important;
+    font-size: 18px !important;
+    color: rgba(255,255,255,0.9) !important;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+  .map-custom-pin,
+  .map-user-dot {
+    background: none !important;
+    border: none !important;
+  }
+  @keyframes map-pulse-ring {
+    0%   { transform: scale(1);   opacity: 0.7; }
+    100% { transform: scale(2.4); opacity: 0; }
+  }

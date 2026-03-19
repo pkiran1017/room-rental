@@ -21,7 +21,7 @@ import {
     Star
 } from 'lucide-react';
 import type { Room } from '@/types';
-import { getRooms, getActiveAds, getRoomById, type PublicAd } from '@/services/roomService';
+import { getRooms, getActiveAds, type PublicAd } from '@/services/roomService';
 import { useChat } from '@/context/ChatContext';
 import { useAuth } from '@/context/AuthContext';
 import RoomCard from '@/components/rooms/RoomCard';
@@ -318,27 +318,14 @@ const HomePage: React.FC = () => {
                 return;
             }
 
-            // Find the room from either featured or recent rooms
-            let room = [...featuredRooms, ...recentRooms].find(r => r.room_id === roomId);
-            
-            if (!room) {
+            const room = [...featuredRooms, ...recentRooms].find((item) => item.room_id === roomId);
+            const chatRoomId = room?.id ?? (room?.room_id ? Number(room.room_id) : undefined);
+
+            if (!room?.room_id || !room?.user_id || !chatRoomId || Number.isNaN(chatRoomId)) {
                 return;
             }
 
-            // If room.id is missing, fetch full room details
-            if (!room.id) {
-                try {
-                    room = await getRoomById(room.room_id);
-                } catch (error) {
-                    return;
-                }
-            }
-
-            if (!room.id || !room.user_id) {
-                return;
-            }
-            
-            await openChat(room.id, room.user_id, room);
+            await openChat(chatRoomId, room.user_id, room);
         } catch (error) {
         }
     };

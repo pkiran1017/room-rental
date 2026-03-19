@@ -133,12 +133,12 @@ const MainLayout: React.FC = () => {
                             <img
                                 src={logoUrl}
                                 alt={businessName}
-                                className="w-[52px] h-[52px] sm:w-12 sm:h-12 object-cover rounded-2xl transition-all duration-300 group-hover:scale-105"
+                                className="w-[52px] h-[52px] sm:w-12 sm:h-12 object-cover rounded-md transition-all duration-300 group-hover:scale-105"
                                 onError={() => setLogoLoadFailed(true)}
                             />
                         ) : (
                             <div
-                                className={`w-[52px] h-[52px] sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition-all duration-300 ${
+                                className={`w-[52px] h-[52px] sm:w-12 sm:h-12 rounded-md flex items-center justify-center transition-all duration-300 ${
                                     scrolled
                                         ? 'bg-gradient-to-br from-blue-600 to-purple-600 shadow-lg'
                                         : 'bg-gradient-to-br from-blue-600 to-purple-600 shadow-md'
@@ -300,11 +300,11 @@ const MainLayout: React.FC = () => {
                                                 <img
                                                     src={logoUrl}
                                                     alt={businessName}
-                                                    className="w-11 h-11 object-cover rounded-2xl ring-2 ring-white/30"
+                                                    className="w-11 h-11 object-cover rounded-md ring-2 ring-white/30"
                                                     onError={() => setLogoLoadFailed(true)}
                                                 />
                                             ) : (
-                                                <div className="w-11 h-11 bg-white/20 rounded-2xl flex items-center justify-center ring-2 ring-white/30">
+                                                <div className="w-11 h-11 bg-white/20 rounded-md flex items-center justify-center ring-2 ring-white/30">
                                                     <Building2 className="w-6 h-6 text-white" />
                                                 </div>
                                             )}

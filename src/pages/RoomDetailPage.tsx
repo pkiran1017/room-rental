@@ -260,7 +260,7 @@ const RoomDetailPage: React.FC = () => {
     return (
         <div className="min-h-screen bg-muted/30">
             {/* Back Button */}
-            <div className="container mx-auto px-4 py-4">
+            <div className="container mx-auto px-4 py-0">
                 <Button variant="ghost" onClick={() => navigate(-1)}>
                     <ChevronLeft className="w-4 h-4 mr-2" />
                     Back

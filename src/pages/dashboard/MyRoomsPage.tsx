@@ -159,7 +159,7 @@ const MyRoomsPage: React.FC = () => {
                             </CardContent>
                         </Card>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 lg:gap-8">
                             {filteredRooms.map((room) => {
                                 const images = roomImages[room.room_id] ?? [];
                                 const currentImageIndex = imageIndexes[room.room_id] || 0;
@@ -209,7 +209,7 @@ const MyRoomsPage: React.FC = () => {
                                                 </div>
                                             </div>
                                             {isOccupied && (
-                                                <div className="mb-3 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-md px-2 py-1 inline-flex items-center gap-1">
+                                                <div className="mb-3 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md px-2 py-1 inline-flex items-center gap-1">
                                                     <CheckCircle2 className="w-3.5 h-3.5" />
                                                     Occupied
                                                 </div>

@@ -78,7 +78,7 @@ const RoomsListPage: React.FC = () => {
     });
     const [showMobileAdvancedFilters, setShowMobileAdvancedFilters] = useState(false);
     const [expandedSections, setExpandedSections] = useState({
-        location: true,
+        location: typeof window !== 'undefined' ? window.innerWidth >= 1024 : true,
         price: true,
         property: true,
         preferences: true
@@ -94,6 +94,7 @@ const RoomsListPage: React.FC = () => {
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
     const searchInputContainerRef = useRef<HTMLDivElement | null>(null);
+    const roomsSearchInputRef = useRef<HTMLInputElement | null>(null);
     const [locationDetected, setLocationDetected] = useState(false);
     const [debouncedFilters, setDebouncedFilters] = useState(filters);
     const roomsRequestCacheRef = useRef<Map<string, { createdAt: number; data: Room[]; pagination: typeof pagination }>>(new Map());
@@ -488,6 +489,24 @@ const RoomsListPage: React.FC = () => {
         return () => document.removeEventListener('mousedown', onClickOutside);
     }, []);
 
+    useEffect(() => {
+        if (searchParams.get('focusSearch') !== '1') return;
+
+        const timer = window.setTimeout(() => {
+            roomsSearchInputRef.current?.focus();
+            roomsSearchInputRef.current?.setSelectionRange(
+                roomsSearchInputRef.current.value.length,
+                roomsSearchInputRef.current.value.length
+            );
+        }, 0);
+
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.delete('focusSearch');
+        setSearchParams(nextParams, { replace: true });
+
+        return () => window.clearTimeout(timer);
+    }, [searchParams, setSearchParams]);
+
     const applySearchSuggestion = (value: string) => {
         handleFilterChange('search', value);
         setIsSearchFocused(false);
@@ -524,10 +543,71 @@ const RoomsListPage: React.FC = () => {
                                     <span>Trending Areas</span>
                                 </div>
                             </div>
-                            <div className="bg-white/10 backdrop-blur border border-white/20 rounded-xl p-3 sm:p-4">
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                            <div className="mt-[4px] bg-white/10 backdrop-blur border border-white/20 rounded-xl p-3 sm:p-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center lg:flex-nowrap gap-3">
+                                    <div className="relative w-full lg:flex-[1.4]" ref={searchInputContainerRef}>
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                        <Input
+                                            ref={roomsSearchInputRef}
+                                            placeholder="Search by area, title..."
+                                            className="pl-9 h-10 border-white/30 bg-white/90 text-slate-900 focus:border-blue-500 focus:ring-blue-500 rounded-lg text-sm"
+                                            value={filters.search || ''}
+                                            onFocus={() => setIsSearchFocused(true)}
+                                            onChange={(e) => {
+                                                handleFilterChange('search', e.target.value);
+                                                setIsSearchFocused(true);
+                                                setActiveSuggestionIndex(-1);
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (!searchSuggestions.length) return;
+
+                                                if (e.key === 'ArrowDown') {
+                                                    e.preventDefault();
+                                                    setActiveSuggestionIndex((prev) => (prev + 1) % searchSuggestions.length);
+                                                }
+
+                                                if (e.key === 'ArrowUp') {
+                                                    e.preventDefault();
+                                                    setActiveSuggestionIndex((prev) => (prev <= 0 ? searchSuggestions.length - 1 : prev - 1));
+                                                }
+
+                                                if (e.key === 'Enter' && activeSuggestionIndex >= 0) {
+                                                    e.preventDefault();
+                                                    applySearchSuggestion(searchSuggestions[activeSuggestionIndex].value);
+                                                }
+
+                                                if (e.key === 'Escape') {
+                                                    setIsSearchFocused(false);
+                                                    setActiveSuggestionIndex(-1);
+                                                }
+                                            }}
+                                        />
+
+                                        {isSearchFocused && (filters.search || '').trim().length > 0 && searchSuggestions.length > 0 && (
+                                            <div className="absolute z-50 top-full mt-1 w-full rounded-lg border border-slate-200 bg-white shadow-lg overflow-hidden">
+                                                <ul className="max-h-56 overflow-y-auto py-1">
+                                                    {searchSuggestions.map((suggestion, index) => (
+                                                        <li key={`${suggestion.type}-${suggestion.value}-${index}`}>
+                                                            <button
+                                                                type="button"
+                                                                className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition-colors flex items-center justify-between ${index === activeSuggestionIndex ? 'bg-blue-50 text-blue-700' : 'text-slate-700'}`}
+                                                                onMouseDown={(event) => {
+                                                                    event.preventDefault();
+                                                                    applySearchSuggestion(suggestion.value);
+                                                                }}
+                                                            >
+                                                                <span className="truncate">{suggestion.value}</span>
+                                                                <span className="text-xs text-slate-500 ml-2 uppercase">{suggestion.type}</span>
+                                                            </button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
+
                                     <Select value={sortBy} onValueChange={setSortBy}>
-                                        <SelectTrigger className="w-full sm:w-52 h-10 border-white/30 bg-white/90 text-slate-900 focus:border-blue-500 focus:ring-blue-500 rounded-lg text-sm">
+                                        <SelectTrigger className="w-full sm:w-52 lg:w-72 h-10 border-white/30 bg-white/90 text-slate-900 focus:border-blue-500 focus:ring-blue-500 rounded-lg text-sm">
                                             <div className="flex items-center gap-2">
                                                 <ArrowUpDown className="w-4 h-4 text-slate-500" />
                                                 <SelectValue placeholder="Sort by" />
@@ -568,16 +648,16 @@ const RoomsListPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="w-full px-2 sm:px-3 lg:px-4 py-6 sm:py-8">
+            <div className="w-full px-2 sm:px-3 lg:px-4 pt-0 sm:pt-6 pb-6 sm:pb-8">
 
                 {/* Faceted Search Filters */}
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-5">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-0 lg:gap-5">
                 {/* Filter Sidebar */}
                 <div className="lg:col-span-1">
-                    <Card className="sticky top-4 shadow-lg border-0 rounded-xl overflow-hidden">
+                    <Card className="sticky top-4 shadow-lg border-0 rounded-xl overflow-hidden mb-0 lg:mb-0">
                         <CardContent className="px-3 py-2 sm:px-4 sm:py-4">
                             {/* Filter Header */}
-                            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200">
+                            <div className="flex items-center justify-between mb-3 sm:mb-6 pb-3 sm:pb-4 border-b border-slate-200">
                                 <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                                     <Filter className="w-5 h-5 text-blue-600" />
                                     Filters
@@ -675,71 +755,12 @@ const RoomsListPage: React.FC = () => {
                                     <div className="flex items-center justify-between mb-3 cursor-pointer hover:opacity-75 transition-opacity" onClick={() => toggleSection('location')}>
                                         <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                                             <MapPin className="w-4 h-4 text-blue-600" />
-                                            District & Search
+                                            District
                                         </h3>
                                         {expandedSections.location ? <ChevronUp className="w-4 h-4 text-slate-600" /> : <ChevronDown className="w-4 h-4 text-slate-600" />}
                                     </div>
                                     {expandedSections.location && (
                                         <div className="space-y-3 pl-0 border-l-2 border-blue-200 pl-4">
-                                            <div className="relative" ref={searchInputContainerRef}>
-                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                                <Input
-                                                    placeholder="Search by area, title..."
-                                                    className="pl-9 h-10 border-slate-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg text-sm"
-                                                    value={filters.search || ''}
-                                                    onFocus={() => setIsSearchFocused(true)}
-                                                    onChange={(e) => {
-                                                        handleFilterChange('search', e.target.value);
-                                                        setIsSearchFocused(true);
-                                                        setActiveSuggestionIndex(-1);
-                                                    }}
-                                                    onKeyDown={(e) => {
-                                                        if (!searchSuggestions.length) return;
-
-                                                        if (e.key === 'ArrowDown') {
-                                                            e.preventDefault();
-                                                            setActiveSuggestionIndex((prev) => (prev + 1) % searchSuggestions.length);
-                                                        }
-
-                                                        if (e.key === 'ArrowUp') {
-                                                            e.preventDefault();
-                                                            setActiveSuggestionIndex((prev) => (prev <= 0 ? searchSuggestions.length - 1 : prev - 1));
-                                                        }
-
-                                                        if (e.key === 'Enter' && activeSuggestionIndex >= 0) {
-                                                            e.preventDefault();
-                                                            applySearchSuggestion(searchSuggestions[activeSuggestionIndex].value);
-                                                        }
-
-                                                        if (e.key === 'Escape') {
-                                                            setIsSearchFocused(false);
-                                                            setActiveSuggestionIndex(-1);
-                                                        }
-                                                    }}
-                                                />
-
-                                                {isSearchFocused && (filters.search || '').trim().length > 0 && searchSuggestions.length > 0 && (
-                                                    <div className="absolute z-50 top-full mt-1 w-full rounded-lg border border-slate-200 bg-white shadow-lg overflow-hidden">
-                                                        <ul className="max-h-56 overflow-y-auto py-1">
-                                                            {searchSuggestions.map((suggestion, index) => (
-                                                                <li key={`${suggestion.type}-${suggestion.value}-${index}`}>
-                                                                    <button
-                                                                        type="button"
-                                                                        className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition-colors flex items-center justify-between ${index === activeSuggestionIndex ? 'bg-blue-50 text-blue-700' : 'text-slate-700'}`}
-                                                                        onMouseDown={(event) => {
-                                                                            event.preventDefault();
-                                                                            applySearchSuggestion(suggestion.value);
-                                                                        }}
-                                                                    >
-                                                                        <span className="truncate">{suggestion.value}</span>
-                                                                        <span className="text-xs text-slate-500 ml-2 uppercase">{suggestion.type}</span>
-                                                                    </button>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    </div>
-                                                )}
-                                            </div>
                                             <Select value={filters.city || 'all'} onValueChange={(value) => handleFilterChange('city', value)}>
                                                 <SelectTrigger className="h-10 border-slate-200 focus:border-blue-500 focus:ring-blue-500 rounded-lg text-sm">
                                                     <SelectValue placeholder="Select district" />

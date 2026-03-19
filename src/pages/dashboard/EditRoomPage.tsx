@@ -702,7 +702,7 @@ const EditRoomPage: React.FC = () => {
 
     if (isLoading) {
         return (
-            <div className="max-w-3xl mx-auto">
+            <div className="max-w-6xl mx-auto px-2 sm:px-4 lg:px-6">
                 <Card>
                     <CardContent className="p-6">
                         <div className="animate-pulse space-y-4">
@@ -717,7 +717,7 @@ const EditRoomPage: React.FC = () => {
     }
 
     return (
-        <div className="max-w-3xl mx-auto pb-8">
+        <div className="max-w-6xl mx-auto px-2 sm:px-4 lg:px-6 pb-8">
             <div className="flex items-center gap-4 mb-6">
                 <Button variant="ghost" onClick={() => navigate('/dashboard/rooms')}>
                     <ChevronLeft className="w-4 h-4 mr-2" />

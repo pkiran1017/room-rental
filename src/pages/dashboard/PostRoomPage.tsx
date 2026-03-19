@@ -1598,7 +1598,7 @@ const PostRoomPage: React.FC = () => {
     const isGuestView = !isAuthenticated;
 
     return (
-        <div className={`${isGuestView ? 'max-w-5xl' : 'max-w-3xl'} mx-auto`}> 
+        <div className={`${isGuestView ? 'max-w-7xl' : 'max-w-6xl'} mx-auto px-2 sm:px-4 lg:px-6 pb-8`}> 
             <div className="flex items-center gap-4 mb-6">
                 <Button variant="ghost" onClick={() => navigate(isAuthenticated ? '/dashboard/rooms' : '/')}>
                     <ChevronLeft className="w-4 h-4 mr-2" />

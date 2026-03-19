@@ -127,6 +127,7 @@ const RoomsListPage: React.FC = () => {
                     limit: 12,
                 });
 
+                // Cache hit → instant display
                 const cached = roomsRequestCacheRef.current.get(cacheKey);
                 if (cached && Date.now() - cached.createdAt < CACHE_MAX_AGE_MS) {
                     if (!isEffectActive || requestId !== roomsRequestSequenceRef.current) {
@@ -138,7 +139,22 @@ const RoomsListPage: React.FC = () => {
                     return;
                 }
 
-                const roomsData = await getRooms(
+                // Wave 1 — fetch first 4 rooms to show something fast
+                const wave1 = await getRooms(
+                    { ...apiFilters, page: pagination.currentPage, limit: 4 },
+                    { signal: abortController.signal }
+                );
+
+                if (!isEffectActive || requestId !== roomsRequestSequenceRef.current || abortController.signal.aborted) {
+                    return;
+                }
+
+                // Show the first 4 rooms immediately — skeleton disappears
+                setRooms(wave1.data);
+                setIsFetching(false);
+
+                // Wave 2 — fetch the full page in the background; new cards animate in
+                const wave2 = await getRooms(
                     { ...apiFilters, page: pagination.currentPage, limit: 12 },
                     { signal: abortController.signal }
                 );
@@ -147,14 +163,13 @@ const RoomsListPage: React.FC = () => {
                     return;
                 }
 
-                setRooms(roomsData.data);
-                setPagination(roomsData.pagination);
-                setIsFetching(false);
+                setRooms(wave2.data);
+                setPagination(wave2.pagination);
 
                 roomsRequestCacheRef.current.set(cacheKey, {
                     createdAt: Date.now(),
-                    data: roomsData.data,
-                    pagination: roomsData.pagination,
+                    data: wave2.data,
+                    pagination: wave2.pagination,
                 });
 
                 if (roomsRequestCacheRef.current.size > 24) {
@@ -169,7 +184,6 @@ const RoomsListPage: React.FC = () => {
                     return;
                 }
                 setIsFetching(false);
-                // Silent error handling
             }
         };
 
@@ -929,14 +943,19 @@ const RoomsListPage: React.FC = () => {
                 </div>
             ) : (
                 <div className={`grid gap-6 lg:gap-8 ${viewType === 'list' ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
-                    {displayedRooms.map((room) => (
-                        <RoomCard
+                    {displayedRooms.map((room, index) => (
+                        <div
                             key={room.room_id}
-                            room={room}
-                            onChat={handleChatClick}
-                            showViews={false}
-                            viewMode={viewType}
-                        />
+                            className="animate-in fade-in slide-in-from-bottom-4 duration-500"
+                            style={{ animationDelay: `${Math.min(index, 11) * 55}ms`, animationFillMode: 'both' }}
+                        >
+                            <RoomCard
+                                room={room}
+                                onChat={handleChatClick}
+                                showViews={false}
+                                viewMode={viewType}
+                            />
+                        </div>
                     ))}
                 </div>
             )}

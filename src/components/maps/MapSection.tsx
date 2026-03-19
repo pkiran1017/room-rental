@@ -256,13 +256,20 @@ const MapSection: React.FC = () => {
             try {
                 setIsLoading(true);
                 const data = await getRooms({ limit: 200, page: 1 });
-                const valid = (data.data ?? []).filter(
-                    (r) =>
-                        typeof r.latitude === 'number' &&
-                        typeof r.longitude === 'number' &&
-                        r.latitude !== 0 &&
-                        r.longitude !== 0
-                );
+                // Coerce lat/lng to numbers (MySQL may return DECIMAL columns as strings)
+                const valid = (data.data ?? [])
+                    .map((r) => ({
+                        ...r,
+                        latitude: parseFloat(r.latitude as unknown as string),
+                        longitude: parseFloat(r.longitude as unknown as string),
+                    }))
+                    .filter(
+                        (r) =>
+                            !isNaN(r.latitude) &&
+                            !isNaN(r.longitude) &&
+                            r.latitude !== 0 &&
+                            r.longitude !== 0
+                    );
                 setRooms(valid);
             } catch {
                 // silent
@@ -446,7 +453,7 @@ const MapSection: React.FC = () => {
     ];
 
     return (
-        <section className="py-16 bg-gradient-to-b from-white to-green-bg relative">
+        <section className="py-16 bg-gradient-to-b from-white to-green-bg relative isolate">
             <div className="max-w-screen-2xl mx-auto px-5">
                 {/* Section Header */}
                 <motion.div

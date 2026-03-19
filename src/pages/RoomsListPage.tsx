@@ -887,7 +887,7 @@ const RoomsListPage: React.FC = () => {
 
             {/* Results */}
             {isFetching ? (
-                <div className="grid gap-6 lg:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid gap-6 lg:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                     {Array.from({ length: 8 }).map((_, i) => (
                         <div key={i} className="rounded-2xl border border-slate-200/80 bg-white shadow-md overflow-hidden animate-pulse">
                             <div className="h-44 bg-slate-200" />
@@ -926,7 +926,7 @@ const RoomsListPage: React.FC = () => {
                                     <h4 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">You Can See Similar Listings</h4>
                                     <p className="text-slate-600">Here are available rooms in <span className="font-semibold text-blue-600">{filters.city}</span> district</p>
                                 </div>
-                                <div className="grid gap-6 lg:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                                <div className="grid gap-6 lg:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                                     {similarRooms.map((room) => (
                                         <RoomCard
                                             key={room.room_id}
@@ -942,7 +942,7 @@ const RoomsListPage: React.FC = () => {
                     </div>
                 </div>
             ) : (
-                <div className={`grid gap-6 lg:gap-8 ${viewType === 'list' ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`}>
+                <div className={`grid gap-6 lg:gap-8 ${viewType === 'list' ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
                     {displayedRooms.map((room, index) => (
                         <div
                             key={room.room_id}

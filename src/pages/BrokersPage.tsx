@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,15 @@ import { getCities } from '@/services/roomService';
 import { buildBrokerPath, buildWhatsAppUrl, getProfileImageUrl, normalizePhoneForWhatsApp } from '@/lib/utils';
 import { readWarmCache, WARM_BROKERS_LIST_KEY } from '@/lib/pageWarmCache';
 
+const BROKERS_PAGE_CACHE_KEY = 'brokers-page-cache-v1';
+const BROKERS_PAGE_CACHE_MAX_AGE_MS = 2 * 60 * 1000;
+
+type BrokersPageCachePayload = {
+    createdAt: number;
+    cacheKey: string;
+    brokers: PublicBroker[];
+};
+
 const BrokersPage: React.FC = () => {
     const navigate = useNavigate();
     const [brokers, setBrokers] = useState<PublicBroker[]>([]);
@@ -26,27 +35,131 @@ const BrokersPage: React.FC = () => {
     const [minListingsFilter, setMinListingsFilter] = useState('0');
     const [sortBy, setSortBy] = useState<'top_listed' | 'newest' | 'name_asc' | 'name_desc'>('top_listed');
     const [hasWarmStartData, setHasWarmStartData] = useState(false);
+    const requestSequenceRef = useRef(0);
+    const requestCacheRef = useRef<Map<string, { createdAt: number; data: PublicBroker[] }>>(new Map());
 
-    const loadBrokers = async (options?: { silent?: boolean }) => {
+    const buildRequestCacheKey = () => {
+        return JSON.stringify({
+            search: appliedSearch.trim(),
+            city: cityFilter === 'all' ? '' : cityFilter,
+            minListings: parseInt(minListingsFilter, 10) || 0,
+            sortBy,
+            page: 1,
+            limit: 100,
+        });
+    };
+
+    const readPageCache = (cacheKey: string): PublicBroker[] | null => {
+        try {
+            const raw = window.sessionStorage.getItem(BROKERS_PAGE_CACHE_KEY);
+            if (!raw) return null;
+
+            const parsed = JSON.parse(raw) as BrokersPageCachePayload;
+            if (!parsed?.createdAt || !Array.isArray(parsed.brokers)) return null;
+            if (Date.now() - parsed.createdAt > BROKERS_PAGE_CACHE_MAX_AGE_MS) return null;
+            if (parsed.cacheKey !== cacheKey) return null;
+
+            return parsed.brokers;
+        } catch {
+            return null;
+        }
+    };
+
+    const writePageCache = (cacheKey: string, data: PublicBroker[]) => {
+        try {
+            const payload: BrokersPageCachePayload = {
+                createdAt: Date.now(),
+                cacheKey,
+                brokers: data,
+            };
+            window.sessionStorage.setItem(BROKERS_PAGE_CACHE_KEY, JSON.stringify(payload));
+        } catch {
+        }
+    };
+
+    const loadBrokers = async (options?: { silent?: boolean; signal?: AbortSignal; requestId?: number }) => {
+        const cacheKey = buildRequestCacheKey();
+
         try {
             if (!options?.silent) {
                 setLoading(true);
             }
             setError('');
 
-            const brokersResponse = await getPublicBrokers({
-                search: appliedSearch || undefined,
-                city: cityFilter === 'all' ? undefined : cityFilter,
-                minListings: parseInt(minListingsFilter, 10),
-                sort: sortBy,
-                page: 1,
-                limit: 100
-            });
+            const cached = requestCacheRef.current.get(cacheKey);
+            if (cached && Date.now() - cached.createdAt < BROKERS_PAGE_CACHE_MAX_AGE_MS) {
+                if (options?.requestId && options.requestId !== requestSequenceRef.current) {
+                    return;
+                }
+                setBrokers(cached.data);
+                setLoading(false);
+                return;
+            }
 
-            setBrokers(brokersResponse.data);
+            const pageCached = readPageCache(cacheKey);
+            if (pageCached?.length) {
+                setBrokers(pageCached);
+                setLoading(false);
+                requestCacheRef.current.set(cacheKey, { createdAt: Date.now(), data: pageCached });
+                return;
+            }
+
+            const wave1 = await getPublicBrokers(
+                {
+                    search: appliedSearch || undefined,
+                    city: cityFilter === 'all' ? undefined : cityFilter,
+                    minListings: parseInt(minListingsFilter, 10),
+                    sort: sortBy,
+                    page: 1,
+                    limit: 12,
+                },
+                { signal: options?.signal }
+            );
+
+            if (options?.signal?.aborted) {
+                return;
+            }
+            if (options?.requestId && options.requestId !== requestSequenceRef.current) {
+                return;
+            }
+
+            setBrokers(wave1.data);
+            setLoading(false);
+
+            const wave2 = await getPublicBrokers(
+                {
+                    search: appliedSearch || undefined,
+                    city: cityFilter === 'all' ? undefined : cityFilter,
+                    minListings: parseInt(minListingsFilter, 10),
+                    sort: sortBy,
+                    page: 1,
+                    limit: 100,
+                },
+                { signal: options?.signal }
+            );
+
+            if (options?.signal?.aborted) {
+                return;
+            }
+            if (options?.requestId && options.requestId !== requestSequenceRef.current) {
+                return;
+            }
+
+            setBrokers(wave2.data);
+            requestCacheRef.current.set(cacheKey, { createdAt: Date.now(), data: wave2.data });
+            if (requestCacheRef.current.size > 24) {
+                const firstKey = requestCacheRef.current.keys().next().value;
+                if (firstKey) {
+                    requestCacheRef.current.delete(firstKey);
+                }
+            }
+            writePageCache(cacheKey, wave2.data);
         } catch (loadError) {
+            const errorWithName = loadError as { name?: string; code?: string };
+            if (errorWithName?.name === 'AbortError' || errorWithName?.code === 'ERR_CANCELED' || options?.signal?.aborted) {
+                return;
+            }
             setError('Unable to load brokers right now. Please try again.');
-        } finally {
             setLoading(false);
         }
     };
@@ -61,7 +174,13 @@ const BrokersPage: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        void loadBrokers({ silent: hasWarmStartData });
+        const abortController = new AbortController();
+        const requestId = ++requestSequenceRef.current;
+        void loadBrokers({ silent: hasWarmStartData, signal: abortController.signal, requestId });
+
+        return () => {
+            abortController.abort();
+        };
     }, [appliedSearch, cityFilter, minListingsFilter, sortBy]);
 
     useEffect(() => {
@@ -188,7 +307,7 @@ const BrokersPage: React.FC = () => {
                     <Card className="border-red-200 bg-red-50/60">
                         <CardContent className="p-5 flex items-center justify-between gap-4">
                             <p className="text-sm text-red-700">{error}</p>
-                            <Button variant="outline" onClick={loadBrokers}>Retry</Button>
+                            <Button variant="outline" onClick={() => void loadBrokers()}>Retry</Button>
                         </CardContent>
                     </Card>
                 ) : null}

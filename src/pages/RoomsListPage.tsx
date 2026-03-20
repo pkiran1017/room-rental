@@ -74,6 +74,19 @@ const ROOM_CARD_ANIMATION_DELAY_CLASSES = [
     '[animation-delay:605ms]',
 ];
 
+const ROOMS_LIST_BOOT_CACHE_KEY = 'rooms-list-boot-cache-v1';
+const ROOMS_LIST_BOOT_CACHE_MAX_AGE_MS = 2 * 60 * 1000;
+
+type RoomsListBootCachePayload = {
+    createdAt: number;
+    rooms: Room[];
+    pagination: {
+        currentPage: number;
+        totalPages: number;
+        totalItems: number;
+    };
+};
+
 const hasMeaningfulFilters = (filters: RoomFilters): boolean => {
     return Boolean(
         filters.city ||
@@ -141,18 +154,42 @@ const RoomsListPage: React.FC = () => {
         }
 
         const warm = readWarmCache<{ rooms: Room[]; pagination: typeof pagination }>(WARM_ROOMS_LIST_KEY);
-        if (!warm?.rooms?.length) {
+        if (warm?.rooms?.length) {
+            setRooms(warm.rooms);
+            setPagination((prev) => ({
+                ...prev,
+                ...warm.pagination,
+                currentPage: prev.currentPage,
+            }));
+            setIsFetching(false);
+            setHasWarmStartData(true);
             return;
         }
 
-        setRooms(warm.rooms);
-        setPagination((prev) => ({
-            ...prev,
-            ...warm.pagination,
-            currentPage: prev.currentPage,
-        }));
-        setIsFetching(false);
-        setHasWarmStartData(true);
+        try {
+            const raw = window.sessionStorage.getItem(ROOMS_LIST_BOOT_CACHE_KEY);
+            if (!raw) {
+                return;
+            }
+
+            const parsed = JSON.parse(raw) as RoomsListBootCachePayload;
+            if (!parsed?.createdAt || !Array.isArray(parsed.rooms) || !parsed.pagination) {
+                return;
+            }
+            if (Date.now() - parsed.createdAt > ROOMS_LIST_BOOT_CACHE_MAX_AGE_MS) {
+                return;
+            }
+
+            setRooms(parsed.rooms);
+            setPagination((prev) => ({
+                ...prev,
+                ...parsed.pagination,
+                currentPage: prev.currentPage,
+            }));
+            setIsFetching(false);
+            setHasWarmStartData(true);
+        } catch {
+        }
     }, []);
 
     useEffect(() => {
@@ -232,6 +269,22 @@ const RoomsListPage: React.FC = () => {
                     data: wave2.data,
                     pagination: wave2.pagination,
                 });
+
+                if (!hasMeaningfulFilters(apiFilters) && pagination.currentPage === 1) {
+                    try {
+                        const payload: RoomsListBootCachePayload = {
+                            createdAt: Date.now(),
+                            rooms: wave2.data,
+                            pagination: {
+                                currentPage: wave2.pagination.currentPage,
+                                totalPages: wave2.pagination.totalPages,
+                                totalItems: wave2.pagination.totalItems,
+                            },
+                        };
+                        window.sessionStorage.setItem(ROOMS_LIST_BOOT_CACHE_KEY, JSON.stringify(payload));
+                    } catch {
+                    }
+                }
 
                 if (roomsRequestCacheRef.current.size > 24) {
                     const firstKey = roomsRequestCacheRef.current.keys().next().value;

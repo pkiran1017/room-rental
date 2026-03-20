@@ -1,4 +1,5 @@
 import { get } from './api';
+import type { AxiosRequestConfig } from 'axios';
 import type { ApiResponse, PaginationInfo } from '@/types';
 import { getProfileImageUrl } from '@/lib/utils';
 
@@ -24,7 +25,8 @@ export interface PublicBrokerFilters {
 }
 
 export const getPublicBrokers = async (
-    filters?: PublicBrokerFilters
+    filters?: PublicBrokerFilters,
+    requestConfig?: AxiosRequestConfig
 ): Promise<{ data: PublicBroker[]; pagination: PaginationInfo }> => {
     const params = new URLSearchParams();
 
@@ -37,7 +39,7 @@ export const getPublicBrokers = async (
     }
 
     try {
-        const response = await get<ApiResponse<PublicBroker[]>>(`/public/brokers?${params}`);
+        const response = await get<ApiResponse<PublicBroker[]>>(`/public/brokers?${params}`, requestConfig);
         const normalizedData = (response.data || []).map((broker) => ({
             ...broker,
             profile_image: getProfileImageUrl(broker.profile_image)
@@ -65,7 +67,7 @@ export const getPublicBrokers = async (
         }
         legacyParams.append('limit', String(Math.max(filters?.limit ?? 100, 100)));
 
-        const legacyResponse = await get<ApiResponse<PublicBroker[]>>(`/public/brokers/top?${legacyParams}`);
+        const legacyResponse = await get<ApiResponse<PublicBroker[]>>(`/public/brokers/top?${legacyParams}`, requestConfig);
         let legacyData = (legacyResponse.data || []).map((broker) => ({
             ...broker,
             profile_image: getProfileImageUrl(broker.profile_image)

@@ -98,6 +98,8 @@ const RoomCard: React.FC<RoomCardProps> = ({ room, onChat, viewMode = 'grid' }) 
         return `\u20b9${Math.round(room.rent || 0).toLocaleString('en-IN')}`;
     };
 
+    const priceLabel = room.listing_type === 'For Sell' ? 'Cost' : 'Rent';
+
     const formatAmount = (amount: number | undefined): string => {
         if (!amount) return '0';
         return Math.round(amount).toLocaleString('en-IN');
@@ -153,7 +155,7 @@ const RoomCard: React.FC<RoomCardProps> = ({ room, onChat, viewMode = 'grid' }) 
             className="h-full"
         >
             <Card
-                className={`group w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-md hover:shadow-xl transition-all duration-300 p-0 gap-0 ${
+                className={`group w-full overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-md hover:shadow-xl transition-all duration-300 gap-0 p-0 ${
                     viewMode === 'list'
                         ? 'max-w-none flex flex-col md:flex-row'
                         : 'flex flex-col'
@@ -164,8 +166,8 @@ const RoomCard: React.FC<RoomCardProps> = ({ room, onChat, viewMode = 'grid' }) 
                     ref={imageContainerRef}
                     className={`relative overflow-hidden bg-slate-100 cursor-pointer ${
                         viewMode === 'list'
-                            ? 'w-full h-52 md:w-72 md:h-auto md:min-h-[240px] flex-shrink-0 rounded-t-2xl md:rounded-t-none md:rounded-l-2xl'
-                            : 'w-full aspect-video rounded-t-2xl'
+                            ? 'w-full h-40 md:w-72 md:h-auto md:min-h-[220px] flex-shrink-0 rounded-t-2xl md:rounded-t-none md:rounded-l-2xl'
+                            : 'w-full h-40 rounded-t-2xl'
                     }`}
                     onClick={() => navigate(roomPath)}
                 >
@@ -210,60 +212,44 @@ const RoomCard: React.FC<RoomCardProps> = ({ room, onChat, viewMode = 'grid' }) 
                     </div>
 
                     <Button
-                        className="absolute bottom-3 right-3 rounded-full bg-white/90 text-slate-800 hover:bg-white shadow-md text-xs h-7 px-3 font-semibold backdrop-blur-sm border-0"
+                        className="absolute bottom-3 right-3 rounded-lg bg-slate-900/82 text-white hover:bg-slate-900 shadow-md text-[11px] h-7 px-2.5 font-semibold backdrop-blur-sm border-0"
                         onClick={(e) => {
                             e.stopPropagation();
                             navigate(roomPath);
                         }}
                     >
-                        View
+                        View Details
                     </Button>
                 </div>
 
                 {/* Content Section */}
-                <CardContent className={`${viewMode === 'list' ? 'px-[2px] py-4 flex-1' : 'px-[2px] py-4'}`}>
+                <CardContent className={`${viewMode === 'list' ? 'px-[10px] pt-[10px] pb-[10px] flex-1 min-w-0' : 'px-[10px] pt-[10px] pb-[10px]'}`}>
                     <h3
-                        className="text-base font-bold truncate mb-1 cursor-pointer text-[#111827] transition-colors hover:text-[#2563EB] leading-snug"
+                        className="text-base font-bold truncate mb-[2px] cursor-pointer text-[#111827] transition-colors hover:text-[#2563EB] leading-snug"
                         onClick={() => navigate(roomPath)}
                     >
                         {room.title}
                     </h3>
 
-                    <p className="text-xs text-slate-500 flex items-center gap-1 mb-3">
-                        <MapPin size={11} className="text-slate-400 flex-shrink-0" />
-                        <span className="truncate">
-                            {room.area}, {room.city}
+                    <div className="mb-[4px] flex items-center justify-between gap-1 text-[13px] font-semibold leading-tight">
+                        <span className="rounded-md bg-amber-50 px-1.5 py-[2px] text-amber-700">
+                            💰{priceLabel}: {displayPrice()}
                         </span>
-                    </p>
-
-                    <div className="flex items-baseline justify-between mb-3">
-                        <div>
-                            <span className="text-xl font-extrabold text-[#2563EB] leading-none">
-                                {displayPrice()}
-                            </span>
-                            {room.listing_type !== 'For Sell' && (
-                                <span className="text-xs text-slate-400 font-medium ml-1">/mo</span>
-                            )}
-                        </div>
-                        {room.deposit && room.listing_type !== 'For Sell' && (
-                            <div className="text-right">
-                                <span className="text-xs text-slate-400">Deposit </span>
-                                <span className="text-xs font-semibold text-indigo-600">
-                                    Rs {formatAmount(room.deposit)}
-                                </span>
-                            </div>
-                        )}
+                        <span className="text-slate-300">|</span>
+                        <span className="rounded-md bg-blue-50 px-1.5 py-[2px] text-blue-700">
+                            💵Deposit: ₹{formatAmount(room.deposit)}
+                        </span>
                     </div>
 
-                    <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 mb-3">
-                        <span>Type: {room.room_type}</span>
+                    <div className="mb-3 flex items-center justify-between gap-x-2 gap-y-1 text-[11px] text-justify">
+                        <span className="font-medium text-blue-700">Type: {room.room_type}</span>
                         <span className="w-px h-3 bg-slate-200" />
-                        <span>Pref: {room.preferred_gender || 'Any'}</span>
+                        <span className="font-medium text-blue-700">Prefer: {room.preferred_gender || 'Any'}</span>
                         <span className="w-px h-3 bg-slate-200" />
-                        <span>House: {room.house_type}</span>
+                        <span className="font-medium text-blue-700">House: {room.house_type}</span>
                     </div>
 
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-[2px]">
                         {mainFacilities.map((facility, idx) => (
                             <Badge
                                 key={idx}
@@ -288,8 +274,8 @@ const RoomCard: React.FC<RoomCardProps> = ({ room, onChat, viewMode = 'grid' }) 
                 <CardFooter
                     className={`border-t border-slate-100 ${
                         viewMode === 'list'
-                            ? 'px-[2px] py-3 flex gap-2 justify-start md:flex-col md:justify-center md:w-44 md:border-t-0 md:border-l'
-                            : 'px-[2px] py-3 flex gap-2'
+                            ? 'px-[10px] pt-[10px] pb-[15px] flex gap-[2px] justify-start md:flex-col md:justify-center md:w-44 md:border-t-0 md:border-l'
+                            : 'px-[10px] pt-[10px] pb-[15px] flex gap-[2px]'
                     }`}
                 >
                     {!isOwner ? (
@@ -299,7 +285,7 @@ const RoomCard: React.FC<RoomCardProps> = ({ room, onChat, viewMode = 'grid' }) 
                                 onClick={() => void handleChatButtonClick()}
                                 title={isChatStarting ? 'Establishing chat...' : 'Chat with owner'}
                                 disabled={isChatStarting}
-                                className={`rounded-xl text-xs h-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:brightness-110 text-white font-semibold shadow-sm transition-all duration-300 hover:scale-[1.03] ${
+                                className={`rounded-xl text-xs h-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm transition-all duration-300 hover:scale-[1.03] ${
                                     viewMode === 'list' ? 'flex-1 md:w-full md:flex-none' : 'flex-1'
                                 }`}
                             >
@@ -321,7 +307,7 @@ const RoomCard: React.FC<RoomCardProps> = ({ room, onChat, viewMode = 'grid' }) 
                                         if (url) window.open(url, '_blank');
                                     }}
                                     title="WhatsApp owner"
-                                    className={`rounded-xl text-xs h-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:brightness-110 text-white font-semibold shadow-sm transition-all duration-300 hover:scale-[1.03] ${
+                                    className={`rounded-xl text-xs h-8 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm transition-all duration-300 hover:scale-[1.03] ${
                                         viewMode === 'list' ? 'flex-1 md:w-full md:flex-none' : 'flex-1'
                                     }`}
                                 >
@@ -337,7 +323,7 @@ const RoomCard: React.FC<RoomCardProps> = ({ room, onChat, viewMode = 'grid' }) 
                                         window.location.href = `tel:${room.contact}`;
                                     }}
                                     title="Call owner"
-                                    className="rounded-xl text-xs h-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:brightness-110 text-white font-semibold shadow-sm px-2.5 transition-all duration-300 hover:scale-[1.03]"
+                                    className="rounded-xl text-xs h-8 bg-amber-500 hover:bg-amber-600 text-white font-semibold shadow-sm px-2.5 transition-all duration-300 hover:scale-[1.03]"
                                 >
                                     <Phone size={13} />
                                 </Button>

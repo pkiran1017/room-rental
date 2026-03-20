@@ -333,7 +333,7 @@ const HomePage: React.FC = () => {
     return (
         <div className="min-h-screen bg-gradient-to-b from-green-bg via-white to-green-bg">
             {/* Hero Section */}
-            <section className="relative overflow-hidden bg-gradient-to-br from-green-primary via-green-secondary to-green-primary text-white pt-10 pb-[50px] lg:pt-10 lg:pb-[50px]">
+            <section className="relative overflow-hidden bg-gradient-to-br from-green-primary via-green-secondary to-green-primary text-white pt-[20px] pb-[20px] md:pt-[30px] md:pb-[30px]">
                 {/* Animated Background Elements */}
                 <div className="absolute inset-0 overflow-hidden">
                     <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-white/10 blur-3xl animate-pulse" />
@@ -341,7 +341,7 @@ const HomePage: React.FC = () => {
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-white/5 blur-3xl" />
                 </div>
 
-                <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 relative z-10 space-y-8">
+                <div className="max-w-screen-2xl mx-auto px-5 sm:px-5 lg:px-6 relative z-10 space-y-[10px] md:space-y-[30px]">
                     {/* Main Heading and Post Room Section - Two Column Layout */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                         {/* Left Column - Badges & Find Perfect Room */}
@@ -373,7 +373,7 @@ const HomePage: React.FC = () => {
                             </div>
 
                             {/* Features Grid Below Text */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-[4px] md:gap-4">
                                 {[
                                     {
                                         icon: CheckCircle,
@@ -544,7 +544,7 @@ const HomePage: React.FC = () => {
                     </div>
 
                     {/* Post Room Card (moved below search card) */}
-                    <Card className="mt-6 relative border border-emerald-300/35 bg-gradient-to-br from-slate-900/95 via-slate-900/85 to-emerald-950/70 backdrop-blur-xl rounded-3xl overflow-hidden transition-all duration-500 shadow-[0_24px_60px_rgba(2,6,23,0.55)] hover:shadow-[0_24px_70px_rgba(16,185,129,0.35)]">
+                    <Card className="mt-[10px] md:mt-6 relative border border-emerald-300/35 bg-gradient-to-br from-slate-900/95 via-slate-900/85 to-emerald-950/70 backdrop-blur-xl rounded-3xl overflow-hidden transition-all duration-500 shadow-[0_24px_60px_rgba(2,6,23,0.55)] hover:shadow-[0_24px_70px_rgba(16,185,129,0.35)]">
                         {currentPostRoomAd && currentPostRoomAd.imageUrl && (
                             <div className="absolute inset-0 w-full h-full">
                                 <img
@@ -584,7 +584,7 @@ const HomePage: React.FC = () => {
                     </Card>
 
                     {/* Stats Grid */}
-                    <div ref={statsRef} className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                    <div ref={statsRef} className="grid grid-cols-2 md:grid-cols-4 gap-[8px] md:gap-6">
                         <div className="group relative overflow-hidden rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 p-5 text-center shadow-xl hover:bg-white/20 transition-all duration-300 hover:-translate-y-1">
                             <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/5" />
                             <Home className="w-8 h-8 mx-auto mb-3 text-yellow-300" />
@@ -614,12 +614,12 @@ const HomePage: React.FC = () => {
             </section>
 
             {/* Featured Rooms Section */}
-            <section className="pt-[30px] pb-20 bg-white relative deferred-render-section">
+            <section className="pt-[20px] pb-[20px] bg-white relative deferred-render-section md:pt-[30px] md:pb-[30px]">
                 {/* Decorative Background */}
                 <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-green-primary to-transparent opacity-5" />
                 
-                <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 relative z-10">
-                    <div className="flex flex-wrap items-end justify-between gap-4 mb-12">
+                <div className="max-w-screen-2xl mx-auto px-5 sm:px-5 lg:px-6 relative z-10">
+                    <div className="flex flex-wrap items-end justify-between gap-[10px] mb-[10px] md:gap-[30px] md:mb-[30px]">
                         <div className="space-y-3">
                             <Badge className="px-3 py-1.5 bg-green-50 text-green-primary border-green-200 font-semibold">
                                 <Star className="w-3.5 h-3.5 mr-1.5 inline fill-current" />
@@ -644,7 +644,7 @@ const HomePage: React.FC = () => {
                     </div>
 
                     {isRoomsLoading ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                        <div className="grid grid-cols-1 gap-[10px] md:grid-cols-2 lg:grid-cols-4">
                             {Array.from({ length: 6 }).map((_, i) => (
                                 <div key={i} className="rounded-2xl border border-slate-200 bg-white shadow-md overflow-hidden animate-pulse">
                                     <div className="h-44 bg-slate-200" />
@@ -657,7 +657,7 @@ const HomePage: React.FC = () => {
                             ))}
                         </div>
                     ) : featuredRooms.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                        <div className="grid grid-cols-1 gap-[10px] md:grid-cols-2 lg:grid-cols-4">
                             {featuredRooms.slice(0, 6).map((room) => (
                                 <RoomCard 
                                     key={room.room_id} 
@@ -681,13 +681,13 @@ const HomePage: React.FC = () => {
             </section>
 
             {/* Recently Added Section */}
-            <section className="pt-[20px] pb-20 bg-gradient-to-b from-slate-50 to-white relative overflow-hidden deferred-render-section">
+            <section className="pt-[20px] pb-[20px] bg-gradient-to-b from-slate-50 to-white relative overflow-hidden deferred-render-section md:pt-[30px] md:pb-[30px]">
                 {/* Decorative Elements */}
                 <div className="absolute top-20 right-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
                 <div className="absolute bottom-20 left-10 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl" />
                 
-                <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 relative z-10">
-                    <div className="flex flex-wrap items-end justify-between gap-4 mb-12">
+                <div className="max-w-screen-2xl mx-auto px-5 sm:px-5 lg:px-6 relative z-10">
+                    <div className="flex flex-wrap items-end justify-between gap-[10px] mb-[10px] md:gap-[30px] md:mb-[30px]">
                         <div className="space-y-3">
                             <Badge className="px-3 py-1.5 bg-green-100 text-green-700 border-green-200 font-semibold">
                                 <Clock className="w-3.5 h-3.5 mr-1.5 inline" />
@@ -712,7 +712,7 @@ const HomePage: React.FC = () => {
                     </div>
 
                     {isRoomsLoading ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                        <div className="grid grid-cols-1 gap-[10px] md:grid-cols-2 lg:grid-cols-4">
                             {Array.from({ length: 8 }).map((_, i) => (
                                 <div key={i} className="rounded-2xl border border-slate-200 bg-white shadow-md overflow-hidden animate-pulse">
                                     <div className="h-44 bg-slate-200" />
@@ -725,7 +725,7 @@ const HomePage: React.FC = () => {
                             ))}
                         </div>
                     ) : recentRooms.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                        <div className="grid grid-cols-1 gap-[10px] md:grid-cols-2 lg:grid-cols-4">
                             {recentRooms.slice(0, 8).map((room) => (
                                 <RoomCard 
                                     key={room.room_id} 
@@ -749,15 +749,15 @@ const HomePage: React.FC = () => {
             </section>
 
             {/* Features Section */}
-            <section className="py-24 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white relative overflow-hidden deferred-render-section">
+            <section className="py-[20px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white relative overflow-hidden deferred-render-section md:py-[30px]">
                 {/* Animated Background Elements */}
                 <div className="absolute inset-0">
                     <div className="absolute top-10 left-10 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse" />
                     <div className="absolute bottom-10 right-10 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse [animation-delay:1s]" />
                 </div>
 
-                <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 relative z-10">
-                    <div className="text-center mb-16 max-w-3xl mx-auto">
+                <div className="max-w-screen-2xl mx-auto px-5 sm:px-5 lg:px-6 relative z-10">
+                    <div className="text-center mb-[10px] max-w-3xl mx-auto md:mb-[30px]">
                         <Badge className="px-4 py-2 mb-6 bg-white/10 backdrop-blur-sm border-white/20 text-white font-semibold">
                             <Shield className="w-4 h-4 mr-2 inline" />
                             Why Choose Us
@@ -773,7 +773,7 @@ const HomePage: React.FC = () => {
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-[4px] md:gap-6">
                         {features.map((feature, index) => (
                             <Card 
                                 key={index} 
@@ -795,15 +795,15 @@ const HomePage: React.FC = () => {
 
             {/* CTA Section */}
             {/* CTA Section */}
-            <section className="py-24 bg-gradient-to-r from-green-primary via-green-secondary to-green-primary text-white relative overflow-hidden deferred-render-section">
+            <section className="py-[20px] bg-gradient-to-r from-green-primary via-green-secondary to-green-primary text-white relative overflow-hidden deferred-render-section md:py-[30px]">
                 {/* Animated Background */}
                 <div className="absolute inset-0">
                     <div className="absolute top-0 left-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse" />
                     <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse [animation-delay:1.5s]" />
                 </div>
 
-                <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 text-center relative z-10">
-                    <div className="max-w-4xl mx-auto space-y-8">
+                <div className="max-w-screen-2xl mx-auto px-5 sm:px-5 lg:px-6 text-center relative z-10">
+                    <div className="max-w-4xl mx-auto space-y-[10px] md:space-y-[30px]">
                         <Badge className="px-4 py-2 bg-white/20 backdrop-blur-sm border-white/30 text-white font-semibold text-base">
                             <Sparkles className="w-4 h-4 mr-2 inline" />
                             Get Started Today
@@ -840,7 +840,7 @@ const HomePage: React.FC = () => {
                         </div>
 
                         {/* Trust Indicators */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-12 max-w-3xl mx-auto">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-[8px] pt-[10px] md:gap-6 md:pt-[30px] max-w-3xl mx-auto">
                             <div className="text-center">
                                 <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-300" />
                                 <p className="text-sm text-white/90 font-medium">100% Verified</p>

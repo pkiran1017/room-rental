@@ -22,22 +22,22 @@ type FilterType = 'all' | 'For Rent' | 'Required Roommate' | 'For Sell';
 
 const FILTER_ACTIVE_CLASS: Record<FilterType, string> = {
     all: 'bg-slate-600 text-white shadow-md border-transparent scale-105',
-    'For Rent': 'bg-green-primary text-white shadow-md border-transparent scale-105',
-    'Required Roommate': 'bg-blue-600 text-white shadow-md border-transparent scale-105',
-    'For Sell': 'bg-amber-500 text-white shadow-md border-transparent scale-105',
+    'For Rent': 'bg-blue-600 text-white shadow-md border-transparent scale-105',
+    'Required Roommate': 'bg-orange-500 text-white shadow-md border-transparent scale-105',
+    'For Sell': 'bg-green-600 text-white shadow-md border-transparent scale-105',
 };
 
 const FILTER_DOT_CLASS: Record<FilterType, string> = {
     all: 'bg-slate-500',
-    'For Rent': 'bg-green-primary',
-    'Required Roommate': 'bg-blue-600',
-    'For Sell': 'bg-amber-500',
+    'For Rent': 'bg-blue-600',
+    'Required Roommate': 'bg-orange-500',
+    'For Sell': 'bg-green-600',
 };
 
 const LEGEND_DOT_CLASS: Record<'For Rent' | 'Required Roommate' | 'For Sell', string> = {
-    'For Rent': 'bg-green-primary',
-    'Required Roommate': 'bg-blue-600',
-    'For Sell': 'bg-amber-500',
+    'For Rent': 'bg-blue-600',
+    'Required Roommate': 'bg-orange-500',
+    'For Sell': 'bg-green-600',
 };
 
 interface PinConfig {
@@ -47,14 +47,41 @@ interface PinConfig {
 }
 
 const PIN_CONFIGS: Record<string, PinConfig> = {
-    'For Rent': { color: '#16A34A', label: 'For Rent', emoji: '🏠' },
-    'Required Roommate': { color: '#3B82F6', label: 'Need Roommate', emoji: '👥' },
-    'For Sell': { color: '#F59E0B', label: 'For Sale', emoji: '🏷️' },
+    'For Rent': { color: '#2563EB', label: 'For Rent', emoji: '🏠' },
+    'Required Roommate': { color: '#F97316', label: 'Need Roommate', emoji: '👥' },
+    'For Sell': { color: '#16A34A', label: 'For Sale', emoji: '🏷️' },
 };
 
 const DEFAULT_CENTER: [number, number] = [18.5204, 73.8567]; // Pune
 const DEFAULT_ZOOM = 12;
 const USER_LOCATION_ZOOM = 13;
+const BASE_FOCUS_RADIUS_KM = 20;
+const MIN_FOCUSED_LISTINGS = 3;
+const MAX_FOCUS_RADIUS_KM = 200;
+const FOCUS_RADIUS_STEP_KM = 10;
+
+const toRadians = (value: number) => (value * Math.PI) / 180;
+
+const distanceInKm = (
+    aLat: number,
+    aLng: number,
+    bLat: number,
+    bLng: number
+): number => {
+    const earthRadiusKm = 6371;
+    const dLat = toRadians(bLat - aLat);
+    const dLng = toRadians(bLng - aLng);
+
+    const h =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRadians(aLat)) *
+            Math.cos(toRadians(bLat)) *
+            Math.sin(dLng / 2) *
+            Math.sin(dLng / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+    return earthRadiusKm * c;
+};
 
 // Inject Leaflet popup override styles once
 let stylesInjected = false;
@@ -125,6 +152,8 @@ const MapSection: React.FC = () => {
     const [locationError, setLocationError] = useState<string | null>(null);
     const [isLocating, setIsLocating] = useState(false);
     const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
+    const [focusRadiusKm, setFocusRadiusKm] = useState(BASE_FOCUS_RADIUS_KM);
+    const [focusedListingsCount, setFocusedListingsCount] = useState(0);
 
     // Inject custom popup/pin CSS once
     useEffect(() => {
@@ -409,6 +438,77 @@ const MapSection: React.FC = () => {
         });
     }, [activeFilter]);
 
+    // Adaptive focus area: start at 20km, then widen radius until we can show at least 3 listings.
+    useEffect(() => {
+        const map = mapRef.current;
+        if (!map) return;
+
+        const center: [number, number] = userLocation ?? DEFAULT_CENTER;
+
+        const filteredRooms =
+            activeFilter === 'all'
+                ? rooms
+                : rooms.filter((room) => room.listing_type === activeFilter);
+
+        if (filteredRooms.length === 0) {
+            setFocusRadiusKm(BASE_FOCUS_RADIUS_KM);
+            setFocusedListingsCount(0);
+            map.setView(center, DEFAULT_ZOOM);
+            return;
+        }
+
+        const roomsWithDistance = filteredRooms
+            .map((room) => ({
+                room,
+                distanceKm: distanceInKm(center[0], center[1], room.latitude, room.longitude),
+            }))
+            .sort((a, b) => a.distanceKm - b.distanceKm);
+
+        let selectedRadiusKm = BASE_FOCUS_RADIUS_KM;
+        let focusedRooms = roomsWithDistance.filter(
+            ({ distanceKm }) => distanceKm <= selectedRadiusKm
+        );
+
+        while (
+            focusedRooms.length < MIN_FOCUSED_LISTINGS &&
+            selectedRadiusKm < MAX_FOCUS_RADIUS_KM
+        ) {
+            selectedRadiusKm += FOCUS_RADIUS_STEP_KM;
+            focusedRooms = roomsWithDistance.filter(
+                ({ distanceKm }) => distanceKm <= selectedRadiusKm
+            );
+        }
+
+        // If radius expansion still has fewer than minimum, fallback to nearest listings.
+        if (focusedRooms.length < MIN_FOCUSED_LISTINGS) {
+            focusedRooms = roomsWithDistance.slice(
+                0,
+                Math.min(MIN_FOCUSED_LISTINGS, roomsWithDistance.length)
+            );
+            const furthestDistance = focusedRooms[focusedRooms.length - 1]?.distanceKm;
+            if (furthestDistance && Number.isFinite(furthestDistance)) {
+                selectedRadiusKm = Math.min(
+                    MAX_FOCUS_RADIUS_KM,
+                    Math.max(BASE_FOCUS_RADIUS_KM, Math.ceil(furthestDistance))
+                );
+            }
+        }
+
+        setFocusRadiusKm(selectedRadiusKm);
+        setFocusedListingsCount(focusedRooms.length);
+
+        const boundsPoints: L.LatLngExpression[] = [
+            center,
+            ...focusedRooms.map(({ room }) => [room.latitude, room.longitude] as [number, number]),
+        ];
+
+        const bounds = L.latLngBounds(boundsPoints);
+        map.fitBounds(bounds, {
+            padding: [40, 40],
+            maxZoom: USER_LOCATION_ZOOM,
+        });
+    }, [rooms, userLocation, activeFilter]);
+
     // Locate Me handler
     const handleLocateMe = useCallback(() => {
         if (!navigator.geolocation) {
@@ -476,7 +576,8 @@ const MapSection: React.FC = () => {
                         </span>
                     </h2>
                     <p className="text-slate-500 text-base sm:text-lg max-w-2xl mx-auto">
-                        All listings are pinned. Map focuses on your current location (20km radius). Hover
+                        All listings are pinned. Map starts with a 20km focus area and auto-expands when
+                        needed so you can see at least 3 nearby listings. Hover
                         a pin to preview, click to view full details.
                     </p>
                 </motion.div>
@@ -601,9 +702,9 @@ const MapSection: React.FC = () => {
                         <p className="mt-2 text-[10px] text-slate-500">Hover a pin to preview, click to open details.</p>
                     </div>
 
-                    {/* "20km" radius badge */}
+                    {/* Dynamic focus radius badge */}
                     <div className="absolute top-4 left-4 z-[400] bg-blue-600/90 backdrop-blur-sm text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
-                        📍 Focused ~20km radius
+                        📍 Focused ~{focusRadiusKm}km • {focusedListingsCount} listings
                     </div>
                 </motion.div>
 
@@ -615,8 +716,8 @@ const MapSection: React.FC = () => {
                     transition={{ duration: 0.5, delay: 0.5 }}
                     className="text-center text-xs sm:text-sm text-slate-400 mt-4"
                 >
-                    Map focuses on listings near your location • All pins are active listings • Click any
-                    pin to open full details
+                    Map starts at ~20km and expands focus to surface at least 3 listings when available •
+                    All pins are active listings • Click any pin to open full details
                 </motion.p>
             </div>
         </section>

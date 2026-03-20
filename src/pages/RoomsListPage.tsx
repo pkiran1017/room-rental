@@ -11,7 +11,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Building2, MapPin, Search, SlidersHorizontal, X, ChevronDown, ChevronUp, DollarSign, UserCheck, Filter, Grid3x3, List, ArrowUpDown, Sparkles, TrendingUp } from 'lucide-react';
+import { Building2, MapPin, Search, SlidersHorizontal, X, ChevronDown, ChevronUp, DollarSign, UserCheck, Filter, Grid3x3, List, ArrowUpDown, Sparkles } from 'lucide-react';
 import type { Room, RoomFilters } from '@/types';
 import { getRooms } from '@/services/roomService';
 import { useChat } from '@/context/ChatContext';
@@ -56,6 +56,21 @@ const MAHARASHTRA_DISTRICTS = [
     'Wardha',
     'Washim',
     'Yavatmal'
+];
+
+const ROOM_CARD_ANIMATION_DELAY_CLASSES = [
+    '[animation-delay:0ms]',
+    '[animation-delay:55ms]',
+    '[animation-delay:110ms]',
+    '[animation-delay:165ms]',
+    '[animation-delay:220ms]',
+    '[animation-delay:275ms]',
+    '[animation-delay:330ms]',
+    '[animation-delay:385ms]',
+    '[animation-delay:440ms]',
+    '[animation-delay:495ms]',
+    '[animation-delay:550ms]',
+    '[animation-delay:605ms]',
 ];
 
 const RoomsListPage: React.FC = () => {
@@ -288,29 +303,61 @@ const RoomsListPage: React.FC = () => {
                                      (filters.furnishingType && filters.furnishingType !== 'all') ||
                                      (filters.gender && filters.gender !== 'all');
             
-            if (rooms.length === 0 && hasFiltersApplied && filters.city && filters.city !== 'all') {
+            if (rooms.length === 0 && hasFiltersApplied) {
                 try {
-                    // Fetch rooms with only city filter
-                    const cityOnlyFilters: RoomFilters = {
-                        city: filters.city,
+                    // Start with focused area, then widen area until we can show at least 3 listings.
+                    const focusedAreaFilters: RoomFilters = {
+                        city: filters.city && filters.city !== 'all' ? filters.city : '',
                         listingType: '',
                         search: '',
                         minRent: undefined,
                         maxRent: undefined,
                         roomType: undefined,
                         furnishingType: undefined,
-                        gender: undefined
+                        gender: undefined,
                     };
-                    const similarData = await getRooms(
-                        { ...cityOnlyFilters, page: 1, limit: 6 },
+
+                    const focusData = await getRooms(
+                        { ...focusedAreaFilters, page: 1, limit: 6 },
                         { signal: abortController.signal }
                     );
+
+                    const focusedRooms = focusData.data ?? [];
+
+                    let nextSimilarRooms = focusedRooms;
+
+                    if (focusedRooms.length < 3) {
+                        const widenedAreaFilters: RoomFilters = {
+                            city: '',
+                            listingType: '',
+                            search: '',
+                            minRent: undefined,
+                            maxRent: undefined,
+                            roomType: undefined,
+                            furnishingType: undefined,
+                            gender: undefined,
+                        };
+
+                        const widenedData = await getRooms(
+                            { ...widenedAreaFilters, page: 1, limit: 10 },
+                            { signal: abortController.signal }
+                        );
+
+                        const widenedRooms = widenedData.data ?? [];
+                        const mergedRooms = [...focusedRooms, ...widenedRooms];
+                        const uniqueRooms = mergedRooms.filter(
+                            (room, index, arr) =>
+                                arr.findIndex((item) => item.room_id === room.room_id) === index
+                        );
+
+                        nextSimilarRooms = uniqueRooms.slice(0, 6);
+                    }
 
                     if (!isEffectActive || requestId !== similarRoomsRequestSequenceRef.current || abortController.signal.aborted) {
                         return;
                     }
 
-                    setSimilarRooms(similarData.data);
+                    setSimilarRooms(nextSimilarRooms);
                 } catch (error) {
                     const err = error as { name?: string; code?: string };
                     if (err?.name === 'AbortError' || err?.code === 'ERR_CANCELED' || abortController.signal.aborted) {
@@ -476,6 +523,74 @@ const RoomsListPage: React.FC = () => {
         return unique.slice(0, 6);
     }, [filters.search, rooms]);
 
+    const renderResults = () => {
+        if (isFetching) {
+            return (
+                <div className="px-[2px]">
+                    <div className="grid grid-cols-1 gap-[4px] md:grid-cols-2 md:gap-[3px] lg:grid-cols-3">
+                        {Array.from({ length: 8 }).map((_, i) => (
+                            <div key={i} className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-md animate-pulse">
+                                <div className="h-44 bg-slate-200" />
+                                <div className="p-4 space-y-3">
+                                    <div className="h-4 w-3/4 rounded bg-slate-200" />
+                                    <div className="h-3 w-1/2 rounded bg-slate-100" />
+                                    <div className="h-5 w-1/3 rounded bg-slate-200" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        if (displayedRooms.length === 0) {
+            return (
+                <div className="flex flex-col items-center justify-center py-4 px-2">
+                    <div className="text-center max-w-xl mx-auto w-full">
+                        <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shadow-sm">
+                            <Building2 className="w-6 h-6 text-slate-400" />
+                        </div>
+                        <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-1">No Exact Match Found</h3>
+                        <p className="text-slate-600 mb-2 text-xs sm:text-sm">
+                            {filters.search
+                                ? `No listings match "${filters.search}".`
+                                : filters.city && filters.city !== 'all'
+                                    ? `No listings found with your current filters in ${filters.city} district.`
+                                    : 'No listings found with your current filters.'}
+                        </p>
+                        {hasActiveFilters && (
+                            <Button onClick={clearAllFilters} className="bg-blue-600 hover:bg-blue-700 mb-2 text-xs sm:text-sm py-1 px-2.5">
+                                Clear All Filters
+                            </Button>
+                        )}
+
+
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="px-[2px]">
+                <div className={`grid gap-[4px] md:gap-[3px] ${viewType === 'list' ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
+                    {displayedRooms.map((room, index) => (
+                        <div
+                            key={room.room_id}
+                            className={`animate-in fade-in slide-in-from-bottom-4 duration-500 [animation-fill-mode:both] first:pb-[10px] ${ROOM_CARD_ANIMATION_DELAY_CLASSES[Math.min(index, ROOM_CARD_ANIMATION_DELAY_CLASSES.length - 1)]}`}
+                        >
+                            <RoomCard
+                                room={room}
+                                onChat={handleChatClick}
+                                showViews={false}
+                                viewMode={viewType}
+                            />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
     useEffect(() => {
         const onClickOutside = (event: MouseEvent) => {
             if (!searchInputContainerRef.current) return;
@@ -516,41 +631,42 @@ const RoomsListPage: React.FC = () => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-green-bg via-white to-slate-100">
             {/* Premium Header Section */}
-            <div className="relative overflow-hidden bg-gradient-to-r from-green-primary via-green-secondary to-green-primary text-white">
+            <div className="relative overflow-visible bg-gradient-to-r from-green-primary via-green-secondary to-green-primary text-white">
                 <div className="absolute inset-0 opacity-10">
                     <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full -translate-x-1/2 -translate-y-1/2"></div>
                     <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/2 translate-y-1/2"></div>
                 </div>
-                
-                <div className="relative w-full px-[2px] pt-10 sm:pt-12 pb-[10px]">
-                    <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-                        <div className="max-w-3xl">
-                            <div className="flex items-center gap-3 mb-4">
-                                <span className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur border border-white/30 rounded-full text-sm font-semibold">
-                                    <Sparkles className="w-4 h-4" />
-                                    Premium Room Rentals
-                                </span>
-                            </div>
-                            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
-                                Find Your Perfect Room
-                            </h1>
-                            <p className="text-base sm:text-lg text-white/90 mb-[10px] max-w-2xl">
-                                Discover available listings from verified landlords with secure and transparent booking experience.
-                            </p>
-                            <div className="flex flex-wrap gap-3">
-                                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/15 border border-white/25 text-white/90 text-sm">
-                                    <TrendingUp className="w-4 h-4" />
-                                    <span>Trending Areas</span>
+
+                <div className="relative z-[60] w-full px-[10px] sm:px-[10px] pt-12 sm:pt-12 pb-[10px] lg:px-[5px]">
+                    <div className="-mt-[40px] bg-white/10 backdrop-blur border border-white/20 rounded-2xl overflow-visible shadow-sm">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+                            <div>
+                                <div className="flex items-center gap-3 mb-4">
+                                    <span className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur border border-white/30 rounded-full text-sm font-semibold">
+                                        <Sparkles className="w-4 h-4" />
+                                        Premium Room Rentals
+                                    </span>
                                 </div>
+                                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
+                                    Find Your Perfect Room
+                                </h1>
+                                <p className="text-base sm:text-lg text-white/90 mb-[10px] max-w-2xl">
+                                    Discover available listings from verified landlords with secure and transparent booking experience.
+                                </p>
                             </div>
-                            <div className="mt-[10px] bg-white/10 backdrop-blur border border-white/20 rounded-xl px-[2px] py-3 sm:px-[2px] sm:py-4">
-                                <div className="flex items-center gap-2 w-full overflow-x-auto pb-1">
-                                    <div className="relative flex-1 min-w-[220px] z-50" ref={searchInputContainerRef}>
+
+                            <div className="hidden lg:block" />
+                        </div>
+
+                        <div className="border-t border-white/20 px-6 py-5">
+                            <div className="w-full">
+                                <div className="flex flex-col lg:flex-row lg:items-center lg:flex-nowrap gap-3">
+                                    <div className="relative z-[120] flex-1 min-w-0 lg:max-w-[1200px]" ref={searchInputContainerRef}>
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                                         <Input
                                             ref={roomsSearchInputRef}
                                             placeholder="Search by area, title..."
-                                            className="pl-9 h-10 border-white/30 bg-white/90 text-slate-900 focus:border-blue-500 focus:ring-blue-500 rounded-lg text-sm"
+                                            className="w-full pl-9 h-10 border-white/30 bg-white/90 text-slate-900 focus:border-blue-500 focus:ring-blue-500 rounded-lg text-sm"
                                             value={filters.search || ''}
                                             onFocus={() => setIsSearchFocused(true)}
                                             onChange={(e) => {
@@ -584,7 +700,7 @@ const RoomsListPage: React.FC = () => {
                                         />
 
                                         {isSearchFocused && (filters.search || '').trim().length > 0 && searchSuggestions.length > 0 && (
-                                            <div className="absolute z-50 top-full mt-1 w-full rounded-lg border border-slate-200 bg-white shadow-lg overflow-hidden">
+                                            <div className="absolute z-[9999] top-full mt-1 w-full rounded-lg border border-slate-200 bg-white shadow-lg overflow-hidden">
                                                 <ul className="max-h-56 overflow-y-auto py-1">
                                                     {searchSuggestions.map((suggestion, index) => (
                                                         <li key={`${suggestion.type}-${suggestion.value}-${index}`}>
@@ -606,40 +722,42 @@ const RoomsListPage: React.FC = () => {
                                         )}
                                     </div>
 
-                                    <Select value={sortBy} onValueChange={setSortBy}>
-                                        <SelectTrigger className="w-[170px] sm:w-52 lg:w-56 h-10 border-white/30 bg-white/90 text-slate-900 focus:border-blue-500 focus:ring-blue-500 rounded-lg text-sm shrink-0">
-                                            <div className="flex items-center gap-2">
-                                                <ArrowUpDown className="w-4 h-4 text-slate-500" />
-                                                <SelectValue placeholder="Sort by" />
-                                            </div>
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="newest">Newest First</SelectItem>
-                                            <SelectItem value="price-low">Price: Low to High</SelectItem>
-                                            <SelectItem value="price-high">Price: High to Low</SelectItem>
-                                            <SelectItem value="featured">Featured</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <div className="flex items-center gap-2 flex-wrap lg:flex-nowrap">
+                                        <Select value={sortBy} onValueChange={setSortBy}>
+                                            <SelectTrigger className="w-[170px] sm:w-52 lg:w-56 h-10 border-white/30 bg-white/90 text-slate-900 focus:border-blue-500 focus:ring-blue-500 rounded-lg text-sm shrink-0">
+                                                <div className="flex items-center gap-2">
+                                                    <ArrowUpDown className="w-4 h-4 text-slate-500" />
+                                                    <SelectValue placeholder="Sort by" />
+                                                </div>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="newest">Newest First</SelectItem>
+                                                <SelectItem value="price-low">Price: Low to High</SelectItem>
+                                                <SelectItem value="price-high">Price: High to Low</SelectItem>
+                                                <SelectItem value="featured">Featured</SelectItem>
+                                            </SelectContent>
+                                        </Select>
 
-                                    <div className="flex gap-2 border border-white/30 bg-white/90 rounded-lg p-1 w-auto shrink-0">
-                                        <Button
-                                            variant={viewType === 'grid' ? 'default' : 'ghost'}
-                                            size="sm"
-                                            onClick={() => setViewType('grid')}
-                                            className={`${viewType === 'grid' ? 'bg-blue-600 text-white hover:bg-purple-600' : 'text-slate-600 hover:text-slate-900'}`}
-                                            title="Grid view"
-                                        >
-                                            <Grid3x3 className="w-4 h-4" />
-                                        </Button>
-                                        <Button
-                                            variant={viewType === 'list' ? 'default' : 'ghost'}
-                                            size="sm"
-                                            onClick={() => setViewType('list')}
-                                            className={`${viewType === 'list' ? 'bg-blue-600 text-white hover:bg-purple-600' : 'text-slate-600 hover:text-slate-900'}`}
-                                            title="List view"
-                                        >
-                                            <List className="w-4 h-4" />
-                                        </Button>
+                                        <div className="hidden md:flex gap-2 border border-white/30 bg-white/90 rounded-lg p-1 w-auto shrink-0">
+                                            <Button
+                                                variant={viewType === 'grid' ? 'default' : 'ghost'}
+                                                size="sm"
+                                                onClick={() => setViewType('grid')}
+                                                className={`${viewType === 'grid' ? 'bg-blue-600 text-white hover:bg-purple-600' : 'text-slate-600 hover:text-slate-900'}`}
+                                                title="Grid view"
+                                            >
+                                                <Grid3x3 className="w-4 h-4" />
+                                            </Button>
+                                            <Button
+                                                variant={viewType === 'list' ? 'default' : 'ghost'}
+                                                size="sm"
+                                                onClick={() => setViewType('list')}
+                                                className={`${viewType === 'list' ? 'bg-blue-600 text-white hover:bg-purple-600' : 'text-slate-600 hover:text-slate-900'}`}
+                                                title="List view"
+                                            >
+                                                <List className="w-4 h-4" />
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -648,21 +766,21 @@ const RoomsListPage: React.FC = () => {
                 </div>
             </div>
 
-            <div className="w-full px-[2px] pt-[10px] pb-6 sm:pb-8">
+            <div className="relative z-0 w-full px-[3px] pt-[15px] pb-6 sm:pb-8 lg:px-[5px]">
 
                 {/* Faceted Search Filters */}
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
+                <div className="grid grid-cols-1 gap-3 lg:grid-cols-[0.8fr_3.2fr] lg:gap-2">
                 {/* Filter Sidebar */}
-                <div className="lg:col-span-1 w-full">
+                <div className="w-full">
                     <Card className="w-full lg:sticky top-4 shadow-lg border-0 rounded-xl overflow-hidden mb-0 lg:mb-0">
-                        <CardContent className="px-[2px] py-2 sm:px-[2px] sm:py-4">
+                        <CardContent className="px-[2px] py-1.5 sm:px-[2px] sm:py-4">
                             {/* Filter Header */}
-                            <div className="flex items-center justify-between mb-3 sm:mb-6 pb-3 sm:pb-4 border-b border-slate-200">
-                                <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                    <Filter className="w-5 h-5 text-blue-600" />
+                            <div className="flex items-center justify-between mb-2 sm:mb-6 pb-2 sm:pb-4 border-b border-slate-200">
+                                <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-1.5 sm:gap-2">
+                                    <Filter className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                                     Filters
                                     {hasActiveFilters && (
-                                        <Badge className="ml-2 bg-blue-600">
+                                        <Badge className="ml-1 sm:ml-2 bg-blue-600 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5">
                                             Active
                                         </Badge>
                                     )}
@@ -671,10 +789,10 @@ const RoomsListPage: React.FC = () => {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => setShowMobileAdvancedFilters((prev) => !prev)}
-                                    className="lg:hidden"
+                                    className="lg:hidden h-8 px-2 text-xs"
                                 >
-                                    <SlidersHorizontal className="w-4 h-4" />
-                                    <span className="ml-2">More Filters</span>
+                                    <SlidersHorizontal className="w-3.5 h-3.5" />
+                                    <span className="ml-1.5">More Filters</span>
                                 </Button>
                             </div>
 
@@ -684,18 +802,18 @@ const RoomsListPage: React.FC = () => {
                                     variant="outline"
                                     size="sm"
                                     onClick={clearAllFilters}
-                                    className="w-full mb-4 text-blue-600 border-slate-300 hover:bg-blue-50 hover:border-blue-500 font-medium"
+                                    className="w-auto min-w-0 mb-2 text-xs sm:text-sm h-8 sm:h-9 px-2.5 sm:px-3 text-blue-600 border-slate-300 hover:bg-blue-50 hover:border-blue-500 font-medium"
                                 >
-                                    <X className="w-4 h-4 mr-2" />
+                                    <X className="w-3.5 h-3.5 mr-1.5" />
                                     Clear All
                                 </Button>
                             )}
 
                             {/* Active Filters Badges */}
                             {hasActiveFilters && (
-                                <div className="mb-6 pb-6 border-b border-slate-200 space-y-3">
+                                <div className="mb-3 sm:mb-6 pb-3 sm:pb-6 border-b border-slate-200 space-y-2">
                                     <p className="text-xs font-bold text-slate-600 uppercase tracking-wide">Active Filters</p>
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
                                         {filters.search && (
                                             <Badge className="gap-1 cursor-pointer bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white transition-colors border-0" onClick={() => handleFilterChange('search', '')}>
                                                 🔍 {filters.search}
@@ -749,15 +867,15 @@ const RoomsListPage: React.FC = () => {
                             )}
 
                             {/* Filter Sections */}
-                            <div className="space-y-6">
+                            <div className="space-y-4 sm:space-y-6">
                                 {/* District Section (mobile: shown after tapping More Filters) */}
                                 <div className={showMobileAdvancedFilters ? 'block' : 'hidden lg:block'}>
-                                    <div className="flex items-center justify-between mb-3 cursor-pointer hover:opacity-75 transition-opacity" onClick={() => toggleSection('location')}>
-                                        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                                            <MapPin className="w-4 h-4 text-blue-600" />
+                                    <div className="flex items-center justify-between mb-2 sm:mb-3 cursor-pointer hover:opacity-75 transition-opacity" onClick={() => toggleSection('location')}>
+                                        <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5 sm:gap-2">
+                                            <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
                                             District
                                         </h3>
-                                        {expandedSections.location ? <ChevronUp className="w-4 h-4 text-slate-600" /> : <ChevronDown className="w-4 h-4 text-slate-600" />}
+                                        {expandedSections.location ? <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-600" /> : <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-600" />}
                                     </div>
                                     {expandedSections.location && (
                                         <div className="space-y-3 pl-0 border-l-2 border-blue-200 pl-4">
@@ -780,13 +898,13 @@ const RoomsListPage: React.FC = () => {
 
                                 <div className={showMobileAdvancedFilters ? 'block' : 'hidden lg:block space-y-6'}>
                                         {/* Price Range Section */}
-                                        <div className="pt-6 border-t border-slate-200">
-                                            <div className="flex items-center justify-between mb-3 cursor-pointer hover:opacity-75 transition-opacity" onClick={() => toggleSection('price')}>
-                                                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                                                    <DollarSign className="w-4 h-4 text-blue-600" />
+                                        <div className="pt-4 sm:pt-6 border-t border-slate-200">
+                                            <div className="flex items-center justify-between mb-2 sm:mb-3 cursor-pointer hover:opacity-75 transition-opacity" onClick={() => toggleSection('price')}>
+                                                <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5 sm:gap-2">
+                                                    <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
                                                     Price Range
                                                 </h3>
-                                                {expandedSections.price ? <ChevronUp className="w-4 h-4 text-slate-600" /> : <ChevronDown className="w-4 h-4 text-slate-600" />}
+                                                {expandedSections.price ? <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-600" /> : <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-600" />}
                                             </div>
                                             {expandedSections.price && (
                                                 <div className="space-y-3 pl-4 border-l-2 border-blue-200">
@@ -809,13 +927,13 @@ const RoomsListPage: React.FC = () => {
                                         </div>
 
                                         {/* Property Details Section */}
-                                        <div className="pt-6 border-t border-slate-200">
-                                            <div className="flex items-center justify-between mb-3 cursor-pointer hover:opacity-75 transition-opacity" onClick={() => toggleSection('property')}>
-                                                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                                                    <Building2 className="w-4 h-4 text-blue-600" />
+                                        <div className="pt-4 sm:pt-6 border-t border-slate-200">
+                                            <div className="flex items-center justify-between mb-2 sm:mb-3 cursor-pointer hover:opacity-75 transition-opacity" onClick={() => toggleSection('property')}>
+                                                <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5 sm:gap-2">
+                                                    <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
                                                     Property Details
                                                 </h3>
-                                                {expandedSections.property ? <ChevronUp className="w-4 h-4 text-slate-600" /> : <ChevronDown className="w-4 h-4 text-slate-600" />}
+                                                {expandedSections.property ? <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-600" /> : <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-600" />}
                                             </div>
                                             {expandedSections.property && (
                                                 <div className="space-y-3 pl-4 border-l-2 border-blue-200">
@@ -870,13 +988,13 @@ const RoomsListPage: React.FC = () => {
                                         </div>
 
                                         {/* Preferences Section */}
-                                        <div className="pt-6 border-t border-slate-200">
-                                            <div className="flex items-center justify-between mb-3 cursor-pointer hover:opacity-75 transition-opacity" onClick={() => toggleSection('preferences')}>
-                                                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                                                    <UserCheck className="w-4 h-4 text-pink-600" />
+                                        <div className="pt-4 sm:pt-6 border-t border-slate-200">
+                                            <div className="flex items-center justify-between mb-2 sm:mb-3 cursor-pointer hover:opacity-75 transition-opacity" onClick={() => toggleSection('preferences')}>
+                                                <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5 sm:gap-2">
+                                                    <UserCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-pink-600" />
                                                     Preferences
                                                 </h3>
-                                                {expandedSections.preferences ? <ChevronUp className="w-4 h-4 text-slate-600" /> : <ChevronDown className="w-4 h-4 text-slate-600" />}
+                                                {expandedSections.preferences ? <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-600" /> : <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-600" />}
                                             </div>
                                             {expandedSections.preferences && (
                                                 <div className="space-y-3 pl-4 border-l-2 border-pink-200">
@@ -899,7 +1017,7 @@ const RoomsListPage: React.FC = () => {
                                         </div>
 
                                         <Button
-                                            className="w-full lg:hidden mt-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 h-10 rounded-lg"
+                                            className="w-full lg:hidden mt-4 sm:mt-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 h-9 sm:h-10 rounded-lg text-sm"
                                             onClick={handleApplyMobileFilters}
                                         >
                                             Apply Filters
@@ -911,124 +1029,40 @@ const RoomsListPage: React.FC = () => {
                 </div>
 
                 {/* Results Area */}
-                <div className="lg:col-span-3">
+                <div className="w-full min-w-0">
+                    {/* Results */}
+                    {renderResults()}
 
-            {/* Results */}
-            {isFetching ? (
-                <div className="grid gap-6 lg:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                        <div key={i} className="rounded-2xl border border-slate-200/80 bg-white shadow-md overflow-hidden animate-pulse">
-                            <div className="h-44 bg-slate-200" />
-                            <div className="p-4 space-y-3">
-                                <div className="h-4 bg-slate-200 rounded w-3/4" />
-                                <div className="h-3 bg-slate-100 rounded w-1/2" />
-                                <div className="h-5 bg-slate-200 rounded w-1/3" />
-                            </div>
+                    {/* Similar Listings - always visible below main results */}
+                    <div className="mt-4 w-full">
+                        <div className="mb-4 pb-2 border-b border-slate-200">
+                            <h4 className="text-sm sm:text-base font-bold text-slate-900 mb-1">You Can See Similar Listings</h4>
+                            <p className="text-slate-600 text-xs">Available rooms in <span className="font-semibold text-blue-600">{filters.city || 'selected areas'}</span></p>
                         </div>
-                    ))}
-                </div>
-            ) : displayedRooms.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 px-4">
-                    <div className="text-center max-w-2xl mx-auto w-full">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shadow-sm">
-                            <Building2 className="w-8 h-8 text-slate-400" />
-                        </div>
-                        <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">No Exact Match Found</h3>
-                        <p className="text-slate-600 mb-4 text-sm">
-                            {filters.search
-                                ? `No listings match "${filters.search}".`
-                                : filters.city && filters.city !== 'all'
-                                    ? `No listings found with your current filters in ${filters.city} district.`
-                                    : 'No listings found with your current filters.'}
-                        </p>
-                        {hasActiveFilters && (
-                            <Button onClick={clearAllFilters} className="bg-blue-600 hover:bg-blue-700 mb-6 text-sm py-1 px-3">
-                                Clear All Filters
-                            </Button>
-                        )}
-
-                        {/* Similar Listings Section */}
-                        {similarRooms.length > 0 && (
-                            <div className="mt-8 w-full">
-                                <div className="mb-4 pb-2 border-b border-slate-200">
-                                    <h4 className="text-sm sm:text-base font-bold text-slate-900 mb-1">You Can See Similar Listings</h4>
-                                    <p className="text-slate-600 text-xs">Available rooms in <span className="font-semibold text-blue-600">{filters.city}</span> district</p>
-                                </div>
-                                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                                    {similarRooms.map((room) => (
-                                        <RoomCard
+                        {similarRooms.length > 0 ? (
+                            <div className="px-[2px]">
+                                <div className="grid grid-cols-1 gap-[4px] md:grid-cols-2 md:gap-[3px] lg:grid-cols-3">
+                                    {similarRooms.map((room, index) => (
+                                        <div
                                             key={room.room_id}
-                                            room={room}
-                                            onChat={handleChatClick}
-                                            showViews={false}
-                                            viewMode="grid"
-                                        />
+                                            className={`animate-in fade-in slide-in-from-bottom-4 duration-500 [animation-fill-mode:both] ${ROOM_CARD_ANIMATION_DELAY_CLASSES[Math.min(index, ROOM_CARD_ANIMATION_DELAY_CLASSES.length - 1)]}`}
+                                        >
+                                            <RoomCard
+                                                room={room}
+                                                onChat={handleChatClick}
+                                                showViews={false}
+                                                viewMode="grid"
+                                            />
+                                        </div>
                                     ))}
                                 </div>
                             </div>
-                        )}
-                    </div>
-                </div>
-            ) : displayedRooms.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 px-4">
-                    <div className="text-center max-w-2xl mx-auto w-full">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center shadow-sm">
-                            <Building2 className="w-8 h-8 text-slate-400" />
-                        </div>
-                        <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">No Exact Match Found</h3>
-                        <p className="text-slate-600 mb-4 text-sm">
-                            {filters.search
-                                ? `No listings match "${filters.search}".`
-                                : filters.city && filters.city !== 'all'
-                                    ? `No listings found with your current filters in ${filters.city} district.`
-                                    : 'No listings found with your current filters.'}
-                        </p>
-                        {hasActiveFilters && (
-                            <Button onClick={clearAllFilters} className="bg-blue-600 hover:bg-blue-700 mb-6 text-sm py-1 px-3">
-                                Clear All Filters
-                            </Button>
-                        )}
-
-                        {/* Similar Listings Section */}
-                        {similarRooms.length > 0 && (
-                            <div className="mt-8 w-full">
-                                <div className="mb-4 pb-2 border-b border-slate-200">
-                                    <h4 className="text-sm sm:text-base font-bold text-slate-900 mb-1">You Can See Similar Listings</h4>
-                                    <p className="text-slate-600 text-xs">Available rooms in <span className="font-semibold text-blue-600">{filters.city}</span> district</p>
-                                </div>
-                                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                                    {similarRooms.map((room) => (
-                                        <RoomCard
-                                            key={room.room_id}
-                                            room={room}
-                                            onChat={handleChatClick}
-                                            showViews={false}
-                                            viewMode="grid"
-                                        />
-                                    ))}
-                                </div>
+                        ) : (
+                            <div className="px-[2px] py-4 text-sm text-slate-500">
+                                Similar listings will appear here as you adjust filters.
                             </div>
                         )}
                     </div>
-                </div>
-            ) : (
-                <div className={`grid gap-6 lg:gap-8 ${viewType === 'list' ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
-                    {displayedRooms.map((room, index) => (
-                        <div
-                            key={room.room_id}
-                            className="animate-in fade-in slide-in-from-bottom-4 duration-500"
-                            style={{ animationDelay: `${Math.min(index, 11) * 55}ms`, animationFillMode: 'both' }}
-                        >
-                            <RoomCard
-                                room={room}
-                                onChat={handleChatClick}
-                                showViews={false}
-                                viewMode={viewType}
-                            />
-                        </div>
-                    ))}
-                </div>
-            )}
 
             {/* Pagination */}
             {pagination.totalPages > 1 && (

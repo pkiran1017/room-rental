@@ -8,7 +8,7 @@ import { getProfileImageUrl } from '@/lib/utils';
 
 const FLOATING_CHAT_POSITION_KEY = 'floating-chat-position-v3';
 const FLOATING_CHAT_BUTTON_SIZE = 56;
-const FLOATING_CHAT_EDGE_MARGIN = 12;
+const FLOATING_CHAT_EDGE_MARGIN = 30;
 
 type FloatingButtonPosition = {
     x: number;
@@ -109,19 +109,10 @@ const FloatingChatButton: React.FC = () => {
     }, [openDropdownWithWarmData, showDropdown]);
 
     useEffect(() => {
-        try {
-            const raw = window.localStorage.getItem(FLOATING_CHAT_POSITION_KEY);
-            if (!raw) return;
-
-            const parsed = JSON.parse(raw) as FloatingButtonPosition;
-            if (typeof parsed?.x !== 'number' || typeof parsed?.y !== 'number') {
-                return;
-            }
-
-            setButtonPosition(clampPosition(parsed));
-        } catch {
-        }
-    }, [clampPosition]);
+        // Position is intentionally NOT restored from storage on mount.
+        // The button always starts at its CSS default (bottom-right) after every
+        // page load / refresh. The user can drag it during the session.
+    }, []);
 
     useEffect(() => {
         if (!buttonPosition) return;

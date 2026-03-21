@@ -296,6 +296,11 @@ const RoomDetailPage: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 xl:gap-8">
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-5 sm:space-y-6">
+                        {/* Room Title — above the image */}
+                        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 leading-snug line-clamp-2">
+                            {room.title}
+                        </h1>
+
                         {/* Image Gallery with Slider */}
                         <Card className="overflow-hidden m-0 p-0 gap-0 border-0 shadow-lg rounded-[20px]">
                             <CardContent className="p-0 m-0">
@@ -422,7 +427,6 @@ const RoomDetailPage: React.FC = () => {
                             <CardContent className="p-6">
                                 <div className="flex items-start justify-between mb-6">
                                     <div>
-                                        <h1 className="text-3xl font-bold mb-2">{room.title}</h1>
                                         <div className="flex items-center gap-2 text-muted-foreground">
                                             <MapPin className="w-4 h-4" />
                                             {room.address}, {room.area}, {room.city} - {room.pincode}

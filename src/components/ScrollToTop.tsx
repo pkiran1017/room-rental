@@ -2,11 +2,42 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 const ScrollToTop: React.FC = () => {
-    const { pathname, search } = useLocation();
+    const { pathname, search, hash } = useLocation();
 
     useEffect(() => {
+        if (hash) {
+            const id = hash.replace('#', '');
+            let timer: number | undefined;
+            let attempts = 0;
+
+            const scrollWhenReady = () => {
+                const element = document.getElementById(id);
+                if (element) {
+                    window.requestAnimationFrame(() => {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    });
+                    return;
+                }
+
+                if (attempts >= 20) {
+                    return;
+                }
+
+                attempts += 1;
+                timer = window.setTimeout(scrollWhenReady, 150);
+            };
+
+            timer = window.setTimeout(scrollWhenReady, 120);
+
+            return () => {
+                if (typeof timer === 'number') {
+                    window.clearTimeout(timer);
+                }
+            };
+        }
+
         window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-    }, [pathname, search]);
+    }, [pathname, search, hash]);
 
     return null;
 };

@@ -17,11 +17,8 @@ import {
     updateAdminAdStatus,
     uploadAdminAdImages,
     getDefaultAdCardBgSearch,
-    getDefaultAdCardBgPost,
     uploadDefaultAdCardBgSearch,
-    uploadDefaultAdCardBgPost,
     removeDefaultAdCardBgSearch,
-    removeDefaultAdCardBgPost,
     type AdminAd,
     type AdminAdPayload
 } from '@/services/adminService';
@@ -60,13 +57,10 @@ const normalizeImageUrls = (images: string[]): string[] => {
 };
 
 const AdminAdsPage: React.FC = () => {
-    // Default Ad Card BG State (separate for search and post)
+    // Default Ad Card BG State
     const [defaultAdBgSearch, setDefaultAdBgSearch] = useState<string>('');
-    const [defaultAdBgPost, setDefaultAdBgPost] = useState<string>('');
     const [uploadingDefaultBgSearch, setUploadingDefaultBgSearch] = useState(false);
-    const [uploadingDefaultBgPost, setUploadingDefaultBgPost] = useState(false);
     const [removingDefaultBgSearch, setRemovingDefaultBgSearch] = useState(false);
-    const [removingDefaultBgPost, setRemovingDefaultBgPost] = useState(false);
 
     useEffect(() => {
         void fetchDefaultAdBgs();
@@ -78,12 +72,6 @@ const AdminAdsPage: React.FC = () => {
             setDefaultAdBgSearch(urlSearch);
         } catch {
             setDefaultAdBgSearch('');
-        }
-        try {
-            const urlPost = await getDefaultAdCardBgPost();
-            setDefaultAdBgPost(urlPost);
-        } catch {
-            setDefaultAdBgPost('');
         }
     };
 
@@ -101,20 +89,6 @@ const AdminAdsPage: React.FC = () => {
             setUploadingDefaultBgSearch(false);
         }
     };
-    const handleDefaultBgUploadPost = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        setUploadingDefaultBgPost(true);
-        try {
-            const url = await uploadDefaultAdCardBgPost(file);
-            setDefaultAdBgPost(url);
-            toast.success('Default Post Room Ad Card background updated!');
-        } catch {
-            toast.error('Failed to upload Post Room Card background');
-        } finally {
-            setUploadingDefaultBgPost(false);
-        }
-    };
 
     const handleDefaultBgRemoveSearch = async () => {
         try {
@@ -129,18 +103,6 @@ const AdminAdsPage: React.FC = () => {
         }
     };
 
-    const handleDefaultBgRemovePost = async () => {
-        try {
-            setRemovingDefaultBgPost(true);
-            await removeDefaultAdCardBgPost();
-            setDefaultAdBgPost('');
-            toast.success('Default Post Room Ad Card background removed');
-        } catch {
-            toast.error('Failed to remove Post Room Card background');
-        } finally {
-            setRemovingDefaultBgPost(false);
-        }
-    };
     const [ads, setAds] = useState<AdminAd[]>([]);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
@@ -159,7 +121,12 @@ const AdminAdsPage: React.FC = () => {
         try {
             setLoading(true);
             const data = await getAdminAds();
-            setAds(data);
+            setAds(
+                data.map((ad) => ({
+                    ...ad,
+                    card_placement: ad.card_placement === 'MP_Post1' ? 'MP_Search' : (ad.card_placement || 'MP_Search'),
+                }))
+            );
         } catch (error) {
             console.error('Failed to fetch ads:', error);
             toast.error('Failed to fetch ads');
@@ -189,7 +156,7 @@ const AdminAdsPage: React.FC = () => {
             images: ad.images || [],
             new_image_url: '',
             priority: ad.priority || 0,
-            card_placement: ad.card_placement || 'MP_Search',
+            card_placement: ad.card_placement === 'MP_Post1' ? 'MP_Search' : (ad.card_placement || 'MP_Search'),
             start_date: toDateInput(ad.start_date),
             end_date: toDateInput(ad.end_date),
             is_active: ad.is_active ?? true
@@ -331,8 +298,8 @@ const AdminAdsPage: React.FC = () => {
 
     return (
         <div className="space-y-6 p-3 sm:p-6 bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 min-h-screen">
-            {/* Default Ad Card Background Upload Cards (Separate for Search and Post Room) */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
+            {/* Default Ad Card Background Upload */}
+            <div className="grid grid-cols-1 gap-6 lg:gap-8">
                 {/* Search Card Default BG */}
                 <Card>
                     <CardHeader>
@@ -370,47 +337,6 @@ const AdminAdsPage: React.FC = () => {
                             >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 {removingDefaultBgSearch ? 'Removing...' : 'Remove Image'}
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-                {/* Post Room Card Default BG */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Default Post Room Ad Card Background</CardTitle>
-                        <CardDescription>
-                            This image will be used as the background for the Post Room Ad Card when no ad is allotted.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-col items-center gap-3">
-                            <div className="w-full max-w-xs h-32 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center">
-                                {defaultAdBgPost ? (
-                                    <img
-                                        src={defaultAdBgPost}
-                                        alt="Default Post Room Ad Card Background"
-                                        className="object-cover w-full h-full"
-                                        onError={() => {
-                                            toast.error('Default Post Room Card image failed to load');
-                                            setDefaultAdBgPost('');
-                                        }}
-                                    />
-                                ) : (
-                                    <span className="text-slate-400">No image set</span>
-                                )}
-                            </div>
-                            <Label htmlFor="default-ad-bg-post-upload" className="mt-2">Upload New Image</Label>
-                            <Input className="max-w-xs" id="default-ad-bg-post-upload" type="file" accept="image/*" onChange={handleDefaultBgUploadPost} disabled={uploadingDefaultBgPost} />
-                            <p className="text-xs text-muted-foreground">Supported: JPEG, PNG, WebP, GIF, SVG, ICO</p>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => { void handleDefaultBgRemovePost(); }}
-                                disabled={!defaultAdBgPost || removingDefaultBgPost || uploadingDefaultBgPost}
-                                className="mt-1 w-full max-w-xs"
-                            >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                {removingDefaultBgPost ? 'Removing...' : 'Remove Image'}
                             </Button>
                         </div>
                     </CardContent>
@@ -699,7 +625,6 @@ const AdminAdsPage: React.FC = () => {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="MP_Search">MP_Search (Hero Search Bar)</SelectItem>
-                                        <SelectItem value="MP_Post1">MP_Post1 (Post Room Card)</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <p className="text-xs text-muted-foreground">Choose where the ad should appear.</p>

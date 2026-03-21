@@ -124,7 +124,7 @@ router.get('/rooms', async (req, res, next) => {
         let searchScoreExpression = '0';
 
         let sql = `
-            SELECT r.room_id, r.listing_type, r.title, r.room_type, r.house_type,
+            SELECT r.id, r.room_id, r.listing_type, r.title, r.room_type, r.house_type,
                    r.city, r.area, r.rent, r.deposit, r.cost, r.size_sqft,
                    r.availability_from, r.furnishing_type, r.facilities, 
                    r.preferred_gender, r.images, r.views_count, r.post_date,

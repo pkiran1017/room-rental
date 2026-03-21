@@ -560,7 +560,7 @@ const MapSection: React.FC = () => {
     ];
 
     return (
-        <section className="py-16 bg-gradient-to-b from-white to-green-bg relative isolate">
+        <section id="nearby-rooms-map" className="py-16 bg-gradient-to-b from-white to-green-bg relative isolate scroll-mt-24">
             <div className="max-w-screen-2xl mx-auto px-5">
                 {/* Section Header */}
                 <motion.div
@@ -589,11 +589,12 @@ const MapSection: React.FC = () => {
 
                 {/* Filter Bar */}
                 <motion.div
+                    id="nearby-rooms-filter"
                     initial={{ opacity: 0, y: 12 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: 0.15 }}
-                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4"
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 scroll-mt-24"
                 >
                     {/* Filter Pills */}
                     <div className="flex flex-wrap gap-2">

@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Building2, MapPin, Search, SlidersHorizontal, X, ChevronDown, ChevronUp, DollarSign, UserCheck, Filter, Grid3x3, List, ArrowUpDown, Sparkles } from 'lucide-react';
 import type { Room, RoomFilters } from '@/types';
-import { getRooms } from '@/services/roomService';
+import { getRooms, getRoomById } from '@/services/roomService';
 import { useChat } from '@/context/ChatContext';
 import { useAuth } from '@/context/AuthContext';
 import RoomCard from '@/components/rooms/RoomCard';
@@ -564,15 +564,26 @@ const RoomsListPage: React.FC = () => {
             return;
         }
         const room = rooms.find((item) => item.room_id === roomId);
-        const chatRoomId = room?.id ?? (room?.room_id ? Number(room.room_id) : undefined);
+        let resolvedRoom = room;
+        let chatRoomId = room?.id;
 
-        if (!room?.room_id || !room?.user_id || !chatRoomId || Number.isNaN(chatRoomId)) {
+        if ((!chatRoomId || Number.isNaN(chatRoomId)) && room?.room_id) {
+            try {
+                const latestRoom = await getRoomById(room.room_id);
+                resolvedRoom = latestRoom;
+                chatRoomId = latestRoom.id;
+            } catch {
+                chatRoomId = undefined;
+            }
+        }
+
+        if (!resolvedRoom?.room_id || !resolvedRoom?.user_id || !chatRoomId || Number.isNaN(chatRoomId)) {
             return;
         }
 
         try {
-            await openChat(chatRoomId, room.user_id, room);
-        } catch (error) {
+            await openChat(chatRoomId, resolvedRoom.user_id, resolvedRoom);
+        } catch {
         }
     };
 

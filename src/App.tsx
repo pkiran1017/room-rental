@@ -86,9 +86,9 @@ function App() {
         let idleId: number | undefined;
 
         if (typeof idleApi.requestIdleCallback === 'function') {
-            idleId = idleApi.requestIdleCallback(() => setIsNonCriticalUiReady(true), { timeout: 2200 });
+            idleId = idleApi.requestIdleCallback(() => setIsNonCriticalUiReady(true), { timeout: 900 });
         } else {
-            timeoutId = globalThis.setTimeout(() => setIsNonCriticalUiReady(true), 1200);
+            timeoutId = globalThis.setTimeout(() => setIsNonCriticalUiReady(true), 450);
         }
 
         return () => {

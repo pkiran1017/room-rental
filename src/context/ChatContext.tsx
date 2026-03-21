@@ -1,6 +1,6 @@
 import React, { Suspense, createContext, lazy, useContext, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { getChatRooms, getOrCreateChatRoom } from '@/services/chatService';
+import { getCachedChatRooms, getChatRooms, getOrCreateChatRoom } from '@/services/chatService';
 import { getNotificationPrefs } from '@/lib/notificationPreferences';
 import { useAuth } from './AuthContext';
 import type { ChatRoom, Room, Message } from '@/types';
@@ -130,6 +130,14 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const openChatByRoomId = async (chatRoomId: string) => {
+        const cachedRooms = getCachedChatRooms();
+        const cachedMatch = cachedRooms?.find((roomItem) => roomItem.room_id === chatRoomId);
+
+        if (cachedMatch) {
+            openExistingChat(cachedMatch);
+            return;
+        }
+
         try {
             setIsLoading(true);
             const rooms = await getChatRooms();

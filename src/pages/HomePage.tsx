@@ -21,7 +21,7 @@ import {
     Star
 } from 'lucide-react';
 import type { Room } from '@/types';
-import { getRooms, getActiveAds, type PublicAd } from '@/services/roomService';
+import { getRooms, getActiveAds, getRoomById, type PublicAd } from '@/services/roomService';
 import { getPublicBrokers } from '@/services/brokerService';
 import { useChat } from '@/context/ChatContext';
 import { useAuth } from '@/context/AuthContext';
@@ -143,19 +143,25 @@ const HomePage: React.FC = () => {
 
         const fetchData = async () => {
             try {
-                // Pull one room payload and derive both sections to avoid duplicate network and parse cost.
-                const [roomsData, adsData] = await Promise.all([
-                    getRooms({ limit: 12, page: 1 }),
+                // Wave 1: render a few cards fast for immediate visual response.
+                const [wave1RoomsData, adsData] = await Promise.all([
+                    getRooms({ limit: 4, page: 1 }),
                     getActiveAds()
                 ]);
 
-                const nextFeaturedRooms = roomsData.data.slice(0, 6);
-                const nextRecentRooms = roomsData.data;
+                const wave1Rooms = wave1RoomsData.data || [];
+                setFeaturedRooms(wave1Rooms.slice(0, 4));
+                setRecentRooms(wave1Rooms);
+                setActiveAds(adsData || []);
+                setIsRoomsLoading(false);
+
+                // Wave 2: fill full card set in the background.
+                const wave2RoomsData = await getRooms({ limit: 12, page: 1 });
+                const nextFeaturedRooms = wave2RoomsData.data.slice(0, 6);
+                const nextRecentRooms = wave2RoomsData.data;
 
                 setFeaturedRooms(nextFeaturedRooms);
                 setRecentRooms(nextRecentRooms);
-                setActiveAds(adsData || []);
-                setIsRoomsLoading(false);
                 writeCachedHomeData({
                     featuredRooms: nextFeaturedRooms,
                     recentRooms: nextRecentRooms,
@@ -163,7 +169,7 @@ const HomePage: React.FC = () => {
                 });
 
                 // Stable stats seeded from total rooms count (no random flicker)
-                const total = roomsData.pagination?.totalItems || nextRecentRooms.length || 0;
+                const total = wave2RoomsData.pagination?.totalItems || nextRecentRooms.length || 0;
                 setStats({
                     total_rooms: Math.max(total, 150),
                     total_members: Math.max(total * 8, 1200),
@@ -284,26 +290,6 @@ const HomePage: React.FC = () => {
         });
     }, [activeAds]);
 
-    // Separate slides for Post Room Card placement (MP_Post1)
-    const postRoomAdSlides = useMemo(() => {
-        const postRoomAds = activeAds.filter((ad) => ad.card_placement === 'MP_Post1');
-
-        return postRoomAds.flatMap((ad) => {
-            const adImages = ad.images && ad.images.length > 0 ? ad.images : [null];
-
-            return adImages.map((imageUrl, imageIndex) => ({
-                adId: ad.id,
-                adTitle: ad.banner_title,
-                adDescription: ad.description,
-                adPriority: ad.priority || 0,
-                imageUrl,
-                imageIndex
-            }));
-        });
-    }, [activeAds]);
-
-    const [postRoomAdIndex, setPostRoomAdIndex] = useState(0);
-
     useEffect(() => {
         if (adSlides.length <= 1) {
             return;
@@ -317,24 +303,8 @@ const HomePage: React.FC = () => {
     }, [adSlides.length]);
 
     useEffect(() => {
-        if (postRoomAdSlides.length <= 1) {
-            return;
-        }
-
-        const timer = window.setInterval(() => {
-            setPostRoomAdIndex((prev) => (prev + 1) % postRoomAdSlides.length);
-        }, 4000);
-
-        return () => window.clearInterval(timer);
-    }, [postRoomAdSlides.length]);
-
-    useEffect(() => {
         setActiveSlideIndex(0);
     }, [adSlides.length]);
-
-    useEffect(() => {
-        setPostRoomAdIndex(0);
-    }, [postRoomAdSlides.length]);
 
     useEffect(() => {
         const timer = window.setInterval(() => {
@@ -347,8 +317,6 @@ const HomePage: React.FC = () => {
     const placeholderTerms = ['Area', 'City', 'Landmark'];
     const currentSlide = adSlides[activeSlideIndex] || null;
 
-    const currentPostRoomAd = postRoomAdSlides[postRoomAdIndex] || null;
-
     const handleChatClick = async (roomId: string) => {
         try {
             if (!isAuthenticated) {
@@ -357,14 +325,26 @@ const HomePage: React.FC = () => {
             }
 
             const room = [...featuredRooms, ...recentRooms].find((item) => item.room_id === roomId);
-            const chatRoomId = room?.id ?? (room?.room_id ? Number(room.room_id) : undefined);
+            let resolvedRoom = room;
+            let chatRoomId = room?.id;
 
-            if (!room?.room_id || !room?.user_id || !chatRoomId || Number.isNaN(chatRoomId)) {
+            // Fallback for older cached payloads that don't include numeric room id.
+            if ((!chatRoomId || Number.isNaN(chatRoomId)) && room?.room_id) {
+                try {
+                    const latestRoom = await getRoomById(room.room_id);
+                    resolvedRoom = latestRoom;
+                    chatRoomId = latestRoom.id;
+                } catch {
+                    chatRoomId = undefined;
+                }
+            }
+
+            if (!resolvedRoom?.room_id || !resolvedRoom?.user_id || !chatRoomId || Number.isNaN(chatRoomId)) {
                 return;
             }
 
-            await openChat(chatRoomId, room.user_id, room);
-        } catch (error) {
+            await openChat(chatRoomId, resolvedRoom.user_id, resolvedRoom);
+        } catch {
         }
     };
 
@@ -588,46 +568,6 @@ const HomePage: React.FC = () => {
                             </Card>
                         </div>
                     </div>
-
-                    {/* Post Room Card (moved below search card) */}
-                    <Card className="mt-[10px] md:mt-5 relative border border-emerald-200/45 ring-1 ring-white/10 bg-gradient-to-br from-slate-900/95 via-slate-900/85 to-emerald-950/70 backdrop-blur-xl rounded-2xl overflow-hidden transition-all duration-500 shadow-[0_16px_40px_rgba(2,6,23,0.45)] hover:shadow-[0_20px_48px_rgba(16,185,129,0.30)]">
-                        {currentPostRoomAd && currentPostRoomAd.imageUrl && (
-                            <div className="absolute inset-0 w-full h-full">
-                                <img
-                                    src={currentPostRoomAd.imageUrl}
-                                    alt={currentPostRoomAd.adTitle}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                        e.currentTarget.style.display = 'none';
-                                    }}
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-br from-slate-900/90 via-slate-900/85 to-emerald-950/80" />
-                            </div>
-                        )}
-
-                        <CardContent className="relative z-10 p-4 sm:p-5 space-y-4">
-                            <Badge className="px-4 py-2 bg-emerald-500/85 backdrop-blur-sm border-white/25 text-white font-semibold">
-                                <Home className="w-4 h-4 mr-2" />
-                                For Property Owners
-                            </Badge>
-
-                            <h3 className="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-emerald-200 via-teal-200 to-cyan-200 bg-clip-text text-transparent leading-tight">
-                                List Your Room
-                            </h3>
-                            <p className="text-white/90 text-sm md:text-base leading-relaxed font-medium">
-                                Share your property with verified renters and get quality leads fast.
-                            </p>
-
-                            <Button
-                                onClick={() => navigate('/rooms/add')}
-                                className="w-full md:w-auto h-12 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:via-teal-400 hover:to-cyan-400 text-white font-bold text-base rounded-2xl shadow-[0_12px_30px_rgba(20,184,166,0.45)] hover:shadow-[0_16px_36px_rgba(34,211,238,0.5)] transition-all duration-300"
-                            >
-                                <Home className="w-5 h-5 mr-2" />
-                                Post Your Room Now
-                                <ArrowRight className="w-4 h-4 ml-2" />
-                            </Button>
-                        </CardContent>
-                    </Card>
 
                     {/* Stats Grid */}
                     <div ref={statsRef} className="grid grid-cols-2 md:grid-cols-4 gap-[8px] md:gap-6">

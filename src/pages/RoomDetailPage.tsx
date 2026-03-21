@@ -94,9 +94,33 @@ const RoomDetailPage: React.FC = () => {
     const [selectedImage, setSelectedImage] = useState(0);
     const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
     const [isEstablishingChat, setIsEstablishingChat] = useState(false);
+    const [shareSuccess, setShareSuccess] = useState(false);
     const { openChat, isLoading: chatLoading } = useChat();
 
     const isOwner = user && room && user.id === room.user_id;
+
+    const handleShare = async () => {
+        const url = window.location.href;
+        const title = room?.title ?? 'Room Listing';
+        const text = room
+            ? `Check out this ${room.room_type} in ${room.area}, ${room.city} — ₹${(room.rent || room.cost || 0).toLocaleString('en-IN')}`
+            : '';
+        if (navigator.share) {
+            try {
+                await navigator.share({ title, text, url });
+            } catch {
+                // user cancelled
+            }
+        } else {
+            try {
+                await navigator.clipboard.writeText(url);
+                setShareSuccess(true);
+                setTimeout(() => setShareSuccess(false), 2000);
+            } catch {
+                // clipboard unavailable
+            }
+        }
+    };
 
     const handleChatClick = async () => {
         if (!isAuthenticated) {
@@ -258,26 +282,27 @@ const RoomDetailPage: React.FC = () => {
     const images = parseImages(room.images);
 
     return (
-        <div className="min-h-screen bg-muted/30">
+        <>
+        <div className="min-h-screen bg-muted/30 pb-[80px] lg:pb-0">
             {/* Back Button */}
-            <div className="container mx-auto px-4 py-0">
+            <div className="max-w-screen-2xl mx-auto px-[10px] sm:px-5 lg:px-6 py-0">
                 <Button variant="ghost" onClick={() => navigate(-1)}>
                     <ChevronLeft className="w-4 h-4 mr-2" />
                     Back
                 </Button>
             </div>
 
-            <div className="container mx-auto px-4 pb-8">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="max-w-screen-2xl mx-auto px-[10px] sm:px-5 lg:px-6 pb-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 xl:gap-8">
                     {/* Main Content */}
-                    <div className="lg:col-span-2 space-y-6">
+                    <div className="lg:col-span-2 space-y-5 sm:space-y-6">
                         {/* Image Gallery with Slider */}
-                        <Card className="overflow-hidden m-0 py-0 gap-0">
+                        <Card className="overflow-hidden m-0 p-0 gap-0 border-0 shadow-lg rounded-[20px]">
                             <CardContent className="p-0 m-0">
                                 <div className="relative m-0">
                                     {/* Main Image */}
                                     <div 
-                                        className="h-96 bg-muted relative overflow-hidden cursor-pointer group"
+                                        className="h-72 sm:h-[440px] lg:h-[500px] bg-muted relative overflow-hidden cursor-pointer group"
                                         onClick={() => images.length > 0 && setIsFullscreenOpen(true)}
                                     >
                                         {images.length > 0 ? (
@@ -311,12 +336,32 @@ const RoomDetailPage: React.FC = () => {
                                             </div>
                                         )}
 
-                                        {/* Image Counter */}
-                                        {images.length > 1 && (
-                                            <div className="absolute bottom-4 right-4 bg-black/60 text-white px-3 py-1 rounded-full text-sm">
-                                                {selectedImage + 1} / {images.length}
+                                        {/* Bottom overlay: location + View on Map + image counter */}
+                                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent px-4 pt-8 pb-3 flex items-end justify-between gap-2">
+                                            <div className="flex items-center gap-1.5 text-white text-xs sm:text-sm font-medium min-w-0">
+                                                <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                                                <span className="truncate">{room.area}, {room.city}</span>
                                             </div>
-                                        )}
+                                            <div className="flex items-center gap-2 flex-shrink-0 pointer-events-auto">
+                                                {room.latitude && room.longitude && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            window.open(`https://www.google.com/maps?q=${room.latitude},${room.longitude}`, '_blank');
+                                                        }}
+                                                        className="flex items-center gap-1 bg-white/20 hover:bg-white/40 text-white text-xs font-semibold px-2.5 py-1.5 rounded-full backdrop-blur-sm transition-colors"
+                                                    >
+                                                        <Map className="w-3.5 h-3.5" />
+                                                        View on Map
+                                                    </button>
+                                                )}
+                                                {images.length > 1 && (
+                                                    <div className="bg-black/60 text-white px-2.5 py-1 rounded-full text-xs">
+                                                        {selectedImage + 1} / {images.length}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
 
                                         {/* Previous Button */}
                                         {images.length > 1 && (
@@ -349,7 +394,7 @@ const RoomDetailPage: React.FC = () => {
 
                                     {/* Thumbnail Slider */}
                                     {images.length > 1 && (
-                                        <div className="bg-muted border-t p-4">
+                                        <div className="bg-muted border-t p-3 sm:p-4">
                                             <div className="flex gap-3 overflow-x-auto pb-2">
                                                 {images.map((img, index) => (
                                                     <button
@@ -384,8 +429,8 @@ const RoomDetailPage: React.FC = () => {
                                         </div>
                                     </div>
                                     <div className="flex gap-2">
-                                        <Button variant="outline" size="icon">
-                                            <Share2 className="w-4 h-4" />
+                                        <Button variant="outline" size="icon" onClick={handleShare} title={shareSuccess ? 'Link copied!' : 'Share'}>
+                                            {shareSuccess ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
                                         </Button>
                                         <Button variant="outline" size="icon">
                                             <Heart className="w-4 h-4" />
@@ -714,7 +759,49 @@ const RoomDetailPage: React.FC = () => {
                                 </DialogContent>
                             </Dialog>
                         </div>
-                    );
-                };
 
-                export default RoomDetailPage;
+            {/* Mobile sticky chat/contact bar */}
+            {!isOwner && (
+                <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-2xl px-4 py-3">
+                    <div className="flex gap-2 max-w-lg mx-auto">
+                        <Button
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-12 text-sm font-semibold shadow-md"
+                            onClick={handleChatClick}
+                            disabled={chatLoading || isEstablishingChat}
+                        >
+                            {isEstablishingChat || chatLoading ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                                <MessageSquare className="w-4 h-4 mr-2" />
+                            )}
+                            {isEstablishingChat ? 'Connecting...' : 'Chat with Owner'}
+                        </Button>
+                        {room?.contact_visibility === 'Public' && room?.contact && (
+                            <>
+                                <Button
+                                    className="bg-green-600 hover:bg-green-700 text-white rounded-xl h-12 w-12 flex-shrink-0 shadow-md"
+                                    onClick={() => {
+                                        const whatsappUrl = buildWhatsAppUrl(room.contact);
+                                        if (whatsappUrl) window.open(whatsappUrl, '_blank');
+                                    }}
+                                    title="WhatsApp"
+                                >
+                                    <MessageCircle className="w-5 h-5" />
+                                </Button>
+                                <Button
+                                    className="bg-orange-600 hover:bg-orange-700 text-white rounded-xl h-12 w-12 flex-shrink-0 shadow-md"
+                                    onClick={() => { window.location.href = `tel:${room.contact}`; }}
+                                    title="Call Owner"
+                                >
+                                    <Phone className="w-5 h-5" />
+                                </Button>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+        </>
+    );
+};
+
+export default RoomDetailPage;

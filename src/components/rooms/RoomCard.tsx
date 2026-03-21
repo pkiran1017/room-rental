@@ -175,7 +175,8 @@ const RoomCard: React.FC<RoomCardProps> = ({ room, onChat, viewMode = 'grid' }) 
                         <img
                             src={images[selectedImage]}
                             alt={room.title}
-                            loading="lazy"
+                            loading={isInViewport ? 'eager' : 'lazy'}
+                            fetchPriority={isInViewport ? 'high' : 'auto'}
                             decoding="async"
                             className={`w-full object-cover transition-transform duration-700 group-hover:scale-110 ${
                                 viewMode === 'list' ? 'h-full min-h-[240px]' : 'h-full'

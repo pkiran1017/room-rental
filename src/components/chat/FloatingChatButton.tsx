@@ -1,10 +1,19 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { MessageCircle, X, Star } from 'lucide-react';
 import { useChat } from '@/context/ChatContext';
 import { useAuth } from '@/context/AuthContext';
 import { getCachedChatRooms, getChatRooms, getUnreadCount, starChat, unstarChat } from '@/services/chatService';
 import type { ChatRoom } from '@/types';
 import { getProfileImageUrl } from '@/lib/utils';
+
+const FLOATING_CHAT_POSITION_KEY = 'floating-chat-position-v1';
+const FLOATING_CHAT_BUTTON_SIZE = 56;
+const FLOATING_CHAT_EDGE_MARGIN = 12;
+
+type FloatingButtonPosition = {
+    x: number;
+    y: number;
+};
 
 const FloatingChatButton: React.FC = () => {
     const { openExistingChat } = useChat();
@@ -13,40 +22,74 @@ const FloatingChatButton: React.FC = () => {
     const [showDropdown, setShowDropdown] = useState(false);
     const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
     const [loading, setLoading] = useState(false);
+    const [buttonPosition, setButtonPosition] = useState<FloatingButtonPosition | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
+    const wrapperRef = useRef<HTMLDivElement | null>(null);
+    const dragPointerIdRef = useRef<number | null>(null);
+    const dragOffsetRef = useRef({ x: 0, y: 0 });
+    const dragStartRef = useRef({ x: 0, y: 0 });
+    const didDragRef = useRef(false);
+
+    const applyChatRooms = useCallback((rooms: ChatRoom[]) => {
+        setChatRooms(rooms);
+        setUnreadCount(rooms.reduce((sum, room) => sum + (room.unread_count || 0), 0));
+    }, []);
+
+    const clampPosition = useCallback((position: FloatingButtonPosition): FloatingButtonPosition => {
+        const maxX = Math.max(
+            FLOATING_CHAT_EDGE_MARGIN,
+            window.innerWidth - FLOATING_CHAT_BUTTON_SIZE - FLOATING_CHAT_EDGE_MARGIN
+        );
+        const maxY = Math.max(
+            FLOATING_CHAT_EDGE_MARGIN,
+            window.innerHeight - FLOATING_CHAT_BUTTON_SIZE - FLOATING_CHAT_EDGE_MARGIN
+        );
+
+        return {
+            x: Math.min(Math.max(position.x, FLOATING_CHAT_EDGE_MARGIN), maxX),
+            y: Math.min(Math.max(position.y, FLOATING_CHAT_EDGE_MARGIN), maxY),
+        };
+    }, []);
 
     const refreshUnreadCount = useCallback(async () => {
+        const cachedRooms = getCachedChatRooms();
+        if (cachedRooms && cachedRooms.length > 0) {
+            applyChatRooms(cachedRooms);
+        }
+
         try {
             const data = await getUnreadCount();
             setUnreadCount(data.unreadCount || 0);
         } catch {
         }
-    }, []);
+    }, [applyChatRooms]);
 
     const loadChatRooms = useCallback(async (showLoader = false) => {
+        const cachedRooms = getCachedChatRooms();
+        if (cachedRooms && cachedRooms.length > 0) {
+            applyChatRooms(cachedRooms);
+        }
+
         try {
-            if (showLoader) {
+            if (showLoader && (!cachedRooms || cachedRooms.length === 0)) {
                 setLoading(true);
             }
             const rooms = await getChatRooms();
-            setChatRooms(rooms);
-
-            const totalUnread = rooms.reduce((sum, r) => sum + (r.unread_count || 0), 0);
-            setUnreadCount(totalUnread);
+            applyChatRooms(rooms);
         } catch {
         } finally {
             if (showLoader) {
                 setLoading(false);
             }
         }
-    }, []);
+    }, [applyChatRooms]);
 
     const openDropdownWithWarmData = useCallback(() => {
         const cachedRooms = getCachedChatRooms();
 
         if (cachedRooms && cachedRooms.length > 0) {
-            setChatRooms(cachedRooms);
-            const totalUnread = cachedRooms.reduce((sum, r) => sum + (r.unread_count || 0), 0);
-            setUnreadCount(totalUnread);
+            applyChatRooms(cachedRooms);
             setLoading(false);
         } else {
             setLoading(true);
@@ -54,7 +97,83 @@ const FloatingChatButton: React.FC = () => {
 
         setShowDropdown(true);
         void loadChatRooms(false);
-    }, [loadChatRooms]);
+    }, [applyChatRooms, loadChatRooms]);
+
+    const toggleDropdown = useCallback(() => {
+        if (showDropdown) {
+            setShowDropdown(false);
+            return;
+        }
+
+        openDropdownWithWarmData();
+    }, [openDropdownWithWarmData, showDropdown]);
+
+    useEffect(() => {
+        try {
+            const raw = window.localStorage.getItem(FLOATING_CHAT_POSITION_KEY);
+            if (!raw) return;
+
+            const parsed = JSON.parse(raw) as FloatingButtonPosition;
+            if (typeof parsed?.x !== 'number' || typeof parsed?.y !== 'number') {
+                return;
+            }
+
+            setButtonPosition(clampPosition(parsed));
+        } catch {
+        }
+    }, [clampPosition]);
+
+    useEffect(() => {
+        if (!buttonPosition) return;
+
+        try {
+            window.localStorage.setItem(FLOATING_CHAT_POSITION_KEY, JSON.stringify(buttonPosition));
+        } catch {
+        }
+    }, [buttonPosition]);
+
+    useEffect(() => {
+        const wrapper = wrapperRef.current;
+        if (!wrapper) return;
+
+        if (!buttonPosition) {
+            wrapper.style.left = '';
+            wrapper.style.top = '';
+            return;
+        }
+
+        wrapper.style.left = `${buttonPosition.x}px`;
+        wrapper.style.top = `${buttonPosition.y}px`;
+    }, [buttonPosition]);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setViewportWidth(window.innerWidth);
+            setButtonPosition((current) => (current ? clampPosition(current) : current));
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [clampPosition]);
+
+    useEffect(() => {
+        const handleOutsideClick = (event: MouseEvent | TouchEvent) => {
+            if (!showDropdown) return;
+            const target = event.target as Node | null;
+            if (target && wrapperRef.current?.contains(target)) {
+                return;
+            }
+            setShowDropdown(false);
+        };
+
+        document.addEventListener('mousedown', handleOutsideClick);
+        document.addEventListener('touchstart', handleOutsideClick, { passive: true });
+
+        return () => {
+            document.removeEventListener('mousedown', handleOutsideClick);
+            document.removeEventListener('touchstart', handleOutsideClick);
+        };
+    }, [showDropdown]);
 
     // Load chat badge and rooms with route-friendly polling strategy.
     useEffect(() => {
@@ -71,6 +190,11 @@ const FloatingChatButton: React.FC = () => {
             void refreshUnreadCount();
         }
 
+        const cachedRooms = getCachedChatRooms();
+        if (cachedRooms && cachedRooms.length > 0) {
+            applyChatRooms(cachedRooms);
+        }
+
         // Refresh every 10 seconds
         const interval = setInterval(() => {
             if (document.visibilityState !== 'visible') {
@@ -84,7 +208,7 @@ const FloatingChatButton: React.FC = () => {
         }, 10000);
 
         return () => clearInterval(interval);
-    }, [isAuthenticated, currentUser?.id, showDropdown, loadChatRooms, refreshUnreadCount]);
+    }, [isAuthenticated, currentUser?.id, showDropdown, loadChatRooms, refreshUnreadCount, applyChatRooms]);
 
     const handleChatClick = (room: ChatRoom) => {
         openExistingChat(room);
@@ -112,11 +236,74 @@ const FloatingChatButton: React.FC = () => {
         }
     };
 
+    const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+        if (event.button !== 0) {
+            return;
+        }
+
+        const target = event.currentTarget;
+        const rect = target.getBoundingClientRect();
+
+        dragPointerIdRef.current = event.pointerId;
+        dragOffsetRef.current = {
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top,
+        };
+        dragStartRef.current = {
+            x: event.clientX,
+            y: event.clientY,
+        };
+        didDragRef.current = false;
+        setIsDragging(true);
+        setButtonPosition((current) => current ?? { x: rect.left, y: rect.top });
+
+        target.setPointerCapture?.(event.pointerId);
+    };
+
+    const handlePointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+        if (dragPointerIdRef.current !== event.pointerId) {
+            return;
+        }
+
+        const deltaX = Math.abs(event.clientX - dragStartRef.current.x);
+        const deltaY = Math.abs(event.clientY - dragStartRef.current.y);
+
+        if (deltaX > 5 || deltaY > 5) {
+            didDragRef.current = true;
+        }
+
+        const nextPosition = clampPosition({
+            x: event.clientX - dragOffsetRef.current.x,
+            y: event.clientY - dragOffsetRef.current.y,
+        });
+
+        setButtonPosition(nextPosition);
+    };
+
+    const finishPointerInteraction = (event: React.PointerEvent<HTMLButtonElement>) => {
+        if (dragPointerIdRef.current !== event.pointerId) {
+            return;
+        }
+
+        event.currentTarget.releasePointerCapture?.(event.pointerId);
+        dragPointerIdRef.current = null;
+        setIsDragging(false);
+
+        if (!didDragRef.current) {
+            toggleDropdown();
+        }
+    };
+
+    const alignRight = buttonPosition ? buttonPosition.x > viewportWidth / 2 : true;
+
     return (
-        <div className="fixed bottom-4 right-4 z-40 flex flex-col items-end gap-2">
+        <div
+            ref={wrapperRef}
+            className={`fixed z-40 flex flex-col gap-2 ${buttonPosition ? 'left-0 top-0' : 'bottom-4 right-4'} ${alignRight ? 'items-end' : 'items-start'}`}
+        >
             {/* Dropdown Menu */}
             {showDropdown && (
-                <div className="bg-white border border-gray-200 rounded-lg shadow-xl w-72 max-h-96 overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-200">
+                <div className="bg-white border border-gray-200 rounded-lg shadow-xl w-72 max-w-[calc(100vw-24px)] max-h-96 overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-200">
                     {/* Header */}
                     <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3 flex items-center justify-between flex-shrink-0">
                         <h3 className="text-white font-semibold flex items-center gap-2">
@@ -230,14 +417,11 @@ const FloatingChatButton: React.FC = () => {
 
             {/* Main Button */}
             <button
-                onClick={() => {
-                    if (showDropdown) {
-                        setShowDropdown(false);
-                        return;
-                    }
-                    openDropdownWithWarmData();
-                }}
-                className="relative bg-gradient-to-r from-blue-600 to-purple-600 hover:brightness-110 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all transform hover:scale-110 active:scale-95"
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={finishPointerInteraction}
+                onPointerCancel={finishPointerInteraction}
+                className={`relative bg-gradient-to-r from-blue-600 to-purple-600 hover:brightness-110 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all transform active:scale-95 touch-none select-none ${isDragging ? 'cursor-grabbing scale-105' : 'cursor-grab hover:scale-110'}`}
                 aria-label="Open chat"
                 title="Chat"
             >

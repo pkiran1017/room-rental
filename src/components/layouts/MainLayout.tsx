@@ -107,7 +107,7 @@ const MainLayout: React.FC = () => {
 
     const handleNearbyRoomsClick = () => {
         if (location.pathname === '/') {
-            const element = document.getElementById('nearby-rooms-filter');
+            const element = document.getElementById('nearby-filter-anchor');
             if (element) {
                 const headerHeight = window.innerWidth < 640 ? 72 : 88;
                 const top = element.getBoundingClientRect().top + window.scrollY - headerHeight;

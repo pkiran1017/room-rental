@@ -55,7 +55,7 @@ const RoomCard: React.FC<RoomCardProps> = ({ room, onChat, viewMode = 'grid' }) 
         }
         const observer = new IntersectionObserver(
             ([entry]) => setIsInViewport(entry.isIntersecting),
-            { rootMargin: '220px 0px 220px 0px', threshold: 0.01 }
+            { rootMargin: '500px 0px 500px 0px', threshold: 0.01 }
         );
         observer.observe(container);
         return () => observer.disconnect();

@@ -589,6 +589,9 @@ const MapSection: React.FC = () => {
                     </p>
                 </motion.div>
 
+                {/* Static scroll anchor – no framer-motion transform, reliable getBoundingClientRect */}
+                <div id="nearby-filter-anchor" />
+
                 {/* Filter Bar */}
                 <motion.div
                     id="nearby-rooms-filter"

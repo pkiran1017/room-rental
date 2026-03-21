@@ -6,7 +6,7 @@ import { getCachedChatRooms, getChatRooms, getUnreadCount, starChat, unstarChat 
 import type { ChatRoom } from '@/types';
 import { getProfileImageUrl } from '@/lib/utils';
 
-const FLOATING_CHAT_POSITION_KEY = 'floating-chat-position-v1';
+const FLOATING_CHAT_POSITION_KEY = 'floating-chat-position-v2';
 const FLOATING_CHAT_BUTTON_SIZE = 56;
 const FLOATING_CHAT_EDGE_MARGIN = 12;
 
@@ -184,11 +184,8 @@ const FloatingChatButton: React.FC = () => {
             return;
         }
 
-        if (showDropdown) {
-            void loadChatRooms(false);
-        } else {
-            void refreshUnreadCount();
-        }
+        // Always pre-warm rooms on auth/page load so dropdown opens instantly
+        void loadChatRooms(false);
 
         const cachedRooms = getCachedChatRooms();
         if (cachedRooms && cachedRooms.length > 0) {
@@ -294,16 +291,23 @@ const FloatingChatButton: React.FC = () => {
         }
     };
 
-    const alignRight = buttonPosition ? buttonPosition.x > viewportWidth / 2 : true;
+    const alignRight = buttonPosition ? buttonPosition.x > viewportWidth / 2 : false;
+    const dropdownBelow = buttonPosition ? buttonPosition.y < window.innerHeight / 2 : false;
 
     return (
         <div
             ref={wrapperRef}
-            className={`fixed z-40 flex flex-col gap-2 ${buttonPosition ? 'left-0 top-0' : 'bottom-4 right-4'} ${alignRight ? 'items-end' : 'items-start'}`}
+            className={`fixed z-40 ${buttonPosition ? 'left-0 top-0' : 'bottom-4 left-4'}`}
         >
-            {/* Dropdown Menu */}
+            {/* Dropdown Menu – absolutely positioned so button never shifts */}
             {showDropdown && (
-                <div className="bg-white border border-gray-200 rounded-lg shadow-xl w-72 max-w-[calc(100vw-24px)] max-h-96 overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-200">
+                <div className={[
+                    'absolute bg-white border border-gray-200 rounded-lg shadow-xl w-72',
+                    'max-w-[calc(100vw-24px)] max-h-96 overflow-hidden flex flex-col',
+                    'animate-in fade-in duration-200',
+                    dropdownBelow ? 'top-full mt-2' : 'bottom-full mb-2',
+                    alignRight ? 'right-0' : 'left-0',
+                ].join(' ')}>
                     {/* Header */}
                     <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3 flex items-center justify-between flex-shrink-0">
                         <h3 className="text-white font-semibold flex items-center gap-2">

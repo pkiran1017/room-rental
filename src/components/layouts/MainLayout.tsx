@@ -109,7 +109,9 @@ const MainLayout: React.FC = () => {
         if (location.pathname === '/') {
             const element = document.getElementById('nearby-rooms-filter');
             if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                const headerHeight = window.innerWidth < 640 ? 72 : 88;
+                const top = element.getBoundingClientRect().top + window.scrollY - headerHeight;
+                window.scrollTo({ top, behavior: 'smooth' });
                 return;
             }
         }

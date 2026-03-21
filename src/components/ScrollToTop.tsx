@@ -14,7 +14,9 @@ const ScrollToTop: React.FC = () => {
                 const element = document.getElementById(id);
                 if (element) {
                     window.requestAnimationFrame(() => {
-                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        const headerHeight = window.innerWidth < 640 ? 72 : 88;
+                        const top = element.getBoundingClientRect().top + window.scrollY - headerHeight;
+                        window.scrollTo({ top, behavior: 'smooth' });
                     });
                     return;
                 }

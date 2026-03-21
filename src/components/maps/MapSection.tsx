@@ -12,6 +12,7 @@ import {
     DollarSign,
     Home,
     AlertCircle,
+    ChevronDown,
 } from 'lucide-react';
 import { getRooms } from '@/services/roomService';
 import type { Room } from '@/types';
@@ -151,6 +152,7 @@ const MapSection: React.FC = () => {
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
     const [locationError, setLocationError] = useState<string | null>(null);
     const [isLocating, setIsLocating] = useState(false);
+    const [isLegendOpen, setIsLegendOpen] = useState(false);
     const [mapBounds, setMapBounds] = useState<L.LatLngBounds | null>(null);
     const [focusRadiusKm, setFocusRadiusKm] = useState(BASE_FOCUS_RADIUS_KM);
     const [focusedListingsCount, setFocusedListingsCount] = useState(0);
@@ -678,34 +680,45 @@ const MapSection: React.FC = () => {
                     <div ref={mapContainerRef} className="w-full h-full" />
 
                     {/* Legend overlay */}
-                    <div className="absolute bottom-6 left-4 z-[400] bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg p-3.5 border border-slate-200 min-w-[220px]">
-                        <div className="flex items-center justify-between mb-2.5">
-                            <p className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">
-                                Legend
-                            </p>
-                            <span className="text-[10px] font-semibold text-slate-400">Listing Type</span>
-                        </div>
-                        {Object.keys(PIN_CONFIGS).map((type) => (
-                            <div key={type} className="flex items-center justify-between gap-3 mb-2 last:mb-0">
-                                <div className="flex items-center gap-2">
-                                    <div
-                                        className={`w-3 h-3 rounded-full flex-shrink-0 shadow-sm ${
-                                            LEGEND_DOT_CLASS[type as 'For Rent' | 'Required Roommate' | 'For Sell']
-                                        }`}
-                                    />
-                                    <span className="text-xs font-medium text-slate-700">{type}</span>
+                    <div className="absolute bottom-6 left-4 z-[400] bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-slate-200">
+                        <button
+                            onClick={() => setIsLegendOpen(prev => !prev)}
+                            className="flex items-center gap-3 w-full px-3.5 py-2.5"
+                            aria-expanded={isLegendOpen}
+                            aria-label="Toggle map legend"
+                        >
+                            <p className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Legend</p>
+                            <ChevronDown
+                                className={`w-3 h-3 text-slate-400 transition-transform duration-200 ml-auto ${isLegendOpen ? 'rotate-180' : ''}`}
+                            />
+                        </button>
+                        {isLegendOpen && (
+                            <div className="px-3.5 pb-3 border-t border-slate-100 min-w-[220px]">
+                                <div className="pt-2.5">
+                                    {Object.keys(PIN_CONFIGS).map((type) => (
+                                        <div key={type} className="flex items-center justify-between gap-3 mb-2 last:mb-0">
+                                            <div className="flex items-center gap-2">
+                                                <div
+                                                    className={`w-3 h-3 rounded-full flex-shrink-0 shadow-sm ${
+                                                        LEGEND_DOT_CLASS[type as 'For Rent' | 'Required Roommate' | 'For Sell']
+                                                    }`}
+                                                />
+                                                <span className="text-xs font-medium text-slate-700">{type}</span>
+                                            </div>
+                                            <span className="text-[10px] text-slate-500">Room Pin</span>
+                                        </div>
+                                    ))}
+                                    <div className="flex items-center justify-between gap-3 mt-2 pt-2 border-t border-slate-100">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-3 h-3 rounded-full flex-shrink-0 bg-blue-500 shadow-sm ring-2 ring-blue-300" />
+                                            <span className="text-xs font-medium text-slate-700">Your Location</span>
+                                        </div>
+                                        <span className="text-[10px] text-slate-500">GPS</span>
+                                    </div>
+                                    <p className="mt-2 text-[10px] text-slate-500">Hover a pin to preview, click to open details.</p>
                                 </div>
-                                <span className="text-[10px] text-slate-500">Room Pin</span>
                             </div>
-                        ))}
-                        <div className="flex items-center justify-between gap-3 mt-2 pt-2 border-t border-slate-100">
-                            <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded-full flex-shrink-0 bg-blue-500 shadow-sm ring-2 ring-blue-300" />
-                                <span className="text-xs font-medium text-slate-700">Your Location</span>
-                            </div>
-                            <span className="text-[10px] text-slate-500">GPS</span>
-                        </div>
-                        <p className="mt-2 text-[10px] text-slate-500">Hover a pin to preview, click to open details.</p>
+                        )}
                     </div>
 
                     {/* Dynamic focus radius badge */}
